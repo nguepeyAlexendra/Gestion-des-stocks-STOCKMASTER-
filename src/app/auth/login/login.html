@@ -1,0 +1,94 @@
+<div class="auth-container">
+
+  <!-- Cercles décoratifs -->
+  <div class="circle circle-1"></div>
+  <div class="circle circle-2"></div>
+  <div class="circle circle-3"></div>
+
+  <div class="auth-content">
+
+    <!-- Côté gauche -->
+    <div class="auth-left">
+      <div class="logo">
+        <div class="logo-icon">
+          <span></span>
+          <span></span>
+        </div>
+        <span class="logo-text">STOCKMASTER</span>
+      </div>
+
+      <h1>Bienvenue !</h1>
+      <div class="divider"></div>
+      <p>Gérez vos stocks et factures facilement avec StockMaster, votre solution commerciale intelligente.</p>
+
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon">📦</div>
+          <span>Gestion des stocks en temps réel</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🧾</div>
+          <span>Facturation automatique</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📊</div>
+          <span>Rapports et statistiques</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Côté droit : formulaire -->
+    <div class="auth-form">
+      <h2>Connexion</h2>
+      <div class="form-divider"></div>
+
+      <!-- Message d'erreur -->
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+
+        <div class="form-group">
+          <label>Nom d'utilisateur</label>
+          <input
+            type="text"
+            formControlName="username"
+            placeholder="Votre username"
+            [class.invalid]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
+          />
+          <span class="error-text"
+            *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
+            Le nom d'utilisateur est requis
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input
+            type="password"
+            formControlName="password"
+            placeholder="••••••••••"
+            [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          />
+          <span class="error-text"
+            *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            Le mot de passe doit contenir au moins 6 caractères
+          </span>
+        </div>
+
+        <button type="submit" class="btn-submit" [disabled]="isLoading">
+          <span *ngIf="!isLoading">Se connecter</span>
+          <span *ngIf="isLoading">Connexion en cours...</span>
+        </button>
+
+      </form>
+
+      <p class="auth-link">
+        Pas encore de compte ?
+        <a routerLink="/auth/register">Créer un compte</a>
+      </p>
+
+    </div>
+  </div>
+</div>

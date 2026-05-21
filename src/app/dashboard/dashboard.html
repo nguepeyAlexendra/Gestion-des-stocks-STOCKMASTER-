@@ -1,0 +1,117 @@
+<div class="dash-wrap">
+
+  <app-sidebar activePage="dashboard"></app-sidebar>
+
+  <div class="main">
+
+    <div class="topbar">
+      <div class="topbar-title">
+        <h1>Tableau de bord</h1>
+        <p>{{ today | titlecase }}</p>
+      </div>
+      <div class="topbar-right">
+        <div class="notif-btn">
+          <i class="ti ti-bell" style="font-size:20px;" aria-hidden="true"></i>
+          <span class="notif-badge" *ngIf="stats.produits_stock_faible > 0">
+            {{ stats.produits_stock_faible }}
+          </span>
+        </div>
+        <div class="user-pill">
+          <div class="user-avatar">{{ getInitiales() }}</div>
+          <span class="user-name">{{ username }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement...</p>
+      </div>
+
+      <div *ngIf="!isLoading">
+
+        <div class="stats-grid">
+          <div class="stat-card stat-card-1">
+            <div class="stat-deco"></div>
+            <div class="stat-icon"><i class="ti ti-package"></i></div>
+            <p class="stat-label">Total produits</p>
+            <p class="stat-value">{{ stats.total_produits }}</p>
+            <p class="stat-sub">En stock</p>
+          </div>
+          <div class="stat-card stat-card-2">
+            <div class="stat-deco"></div>
+            <div class="stat-icon"><i class="ti ti-coin"></i></div>
+            <p class="stat-label">Chiffre d'affaires</p>
+            <p class="stat-value">{{ stats.chiffre_affaires | number }} F</p>
+            <p class="stat-sub">Total cumulé</p>
+          </div>
+          <div class="stat-card stat-card-3">
+            <div class="stat-deco"></div>
+            <div class="stat-icon"><i class="ti ti-shopping-cart"></i></div>
+            <p class="stat-label">Ventes aujourd'hui</p>
+            <p class="stat-value">{{ stats.ventes_aujourdhui }}</p>
+            <p class="stat-sub">Transactions</p>
+          </div>
+          <div class="stat-card stat-card-4">
+            <div class="stat-deco"></div>
+            <div class="stat-icon"><i class="ti ti-alert-triangle"></i></div>
+            <p class="stat-label">Stock faible</p>
+            <p class="stat-value">{{ stats.produits_stock_faible }}</p>
+            <p class="stat-sub">Attention requise</p>
+          </div>
+        </div>
+
+        <div class="bottom-grid">
+
+          <div class="card">
+            <div class="card-header">
+              <p class="card-title">Dernières ventes</p>
+            </div>
+            <div *ngIf="dernieres_ventes.length === 0" class="empty-state">
+              <p>Aucune vente pour l'instant</p>
+            </div>
+            <div class="vente-row" *ngFor="let vente of dernieres_ventes">
+              <div>
+                <p class="vente-client">{{ vente.client_nom || 'Client anonyme' }}</p>
+                <p class="vente-date">{{ vente.date_vente | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+              <div style="text-align:right">
+                <p class="vente-amount">{{ vente.montant_total | number }} F</p>
+                <span class="badge" [ngClass]="{
+                  'badge-green'  : vente.statut === 'payee',
+                  'badge-yellow' : vente.statut === 'en_attente',
+                  'badge-red'    : vente.statut === 'annulee'
+                }">
+                  {{ vente.statut === 'payee' ? 'Payée' : vente.statut === 'en_attente' ? 'Attente' : 'Annulée' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <p class="card-title">Alertes stock faible</p>
+            </div>
+            <div *ngIf="alertes_stock.length === 0" class="empty-state">
+              <p>Tous les stocks sont bons !</p>
+            </div>
+            <div class="alert-item" *ngFor="let produit of alertes_stock"
+              [ngClass]="{
+                'alert-red'    : produit.quantite_stock <= 2,
+                'alert-orange' : produit.quantite_stock > 2
+              }">
+              <div>
+                <p class="alert-name">{{ produit.nom }}</p>
+                <p class="alert-seuil">Seuil : {{ produit.seuil_alerte }} unités</p>
+              </div>
+              <span class="alert-qty">{{ produit.quantite_stock }} restants</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

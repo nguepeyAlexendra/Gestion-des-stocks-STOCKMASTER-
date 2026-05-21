@@ -1,0 +1,111 @@
+<div class="wrap">
+
+  <app-sidebar activePage="categories"></app-sidebar>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">Catégories</h1>
+        <p class="page-sub">{{ categories.length }} catégorie(s) enregistrée(s)</p>
+      </div>
+      <button class="btn-primary" (click)="openForm()">
+        <i class="ti ti-plus"></i> Ajouter une catégorie
+      </button>
+    </header>
+
+    <div class="content">
+
+      <div class="toast-success" *ngIf="successMessage">
+        <i class="ti ti-circle-check"></i> {{ successMessage }}
+      </div>
+
+      <div class="form-section" *ngIf="showForm">
+        <div class="form-header">
+          <h2>{{ isEditing ? '✏️ Modifier la catégorie' : '🏷️ Nouvelle catégorie' }}</h2>
+          <p>Remplissez les informations de la catégorie</p>
+        </div>
+
+        <div class="error-box" *ngIf="errorMessage">
+          <i class="ti ti-alert-circle"></i> {{ errorMessage }}
+        </div>
+
+        <form [formGroup]="categorieForm" (ngSubmit)="saveCategorie()">
+
+          <!-- CHOIX ICONE -->
+          <div class="form-group">
+            <label>Icône de la catégorie</label>
+            <div class="emoji-grid">
+              <div class="emoji-item"
+                *ngFor="let emoji of emojis"
+                [class.selected]="categorieForm.get('icone')?.value === emoji"
+                (click)="selectEmoji(emoji)">
+                {{ emoji }}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Nom de la catégorie <span class="required">*</span></label>
+            <input type="text" formControlName="nom" placeholder="Ex: Alimentaire, Boissons..." />
+            <span class="err" *ngIf="categorieForm.get('nom')?.invalid && categorieForm.get('nom')?.touched">
+              Champ requis
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description" placeholder="Description de la catégorie..." rows="3"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit" [disabled]="categorieForm.invalid">
+              <i class="ti ti-check"></i>
+              {{ isEditing ? 'Enregistrer les modifications' : 'Ajouter la catégorie' }}
+            </button>
+            <button type="button" class="btn-cancel" (click)="closeForm()">
+              <i class="ti ti-x"></i> Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement...</p>
+      </div>
+
+      <div *ngIf="!isLoading && !showForm">
+
+        <div class="empty" *ngIf="categories.length === 0">
+          <div class="empty-icon">🏷️</div>
+          <h3>Aucune catégorie</h3>
+          <p>Commencez par créer votre première catégorie</p>
+          <button class="btn-primary" (click)="openForm()">
+            <i class="ti ti-plus"></i> Ajouter une catégorie
+          </button>
+        </div>
+
+        <div class="cards-grid" *ngIf="categories.length > 0">
+          <div class="cat-card" *ngFor="let cat of categories">
+            <div class="cat-icon">{{ cat.icone || '🏷️' }}</div>
+            <div class="cat-info">
+              <h3>{{ cat.nom }}</h3>
+              <p>{{ cat.description || 'Pas de description' }}</p>
+              <span class="cat-count">{{ cat.nombre_produits }} produit(s)</span>
+            </div>
+            <div class="cat-actions">
+              <button class="act-edit" (click)="openForm(cat)">
+                <i class="ti ti-edit"></i>
+              </button>
+              <button class="act-del" (click)="deleteCategorie(cat.id)">
+                <i class="ti ti-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>

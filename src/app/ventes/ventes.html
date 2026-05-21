@@ -1,0 +1,208 @@
+<div class="wrap">
+
+  <app-sidebar activePage="ventes"></app-sidebar>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">Gestion des Ventes</h1>
+        <p class="page-sub">{{ ventes.length }} vente(s) enregistrée(s)</p>
+      </div>
+      <button class="btn-primary" (click)="ouvrirFormVente()">
+        <i class="ti ti-plus"></i> Nouvelle vente
+      </button>
+    </header>
+
+    <div class="content">
+
+      <div class="toast-success" *ngIf="successMessage">
+        <i class="ti ti-circle-check"></i> {{ successMessage }}
+      </div>
+
+      <!-- FORMULAIRE NOUVELLE VENTE -->
+      <div class="vente-form" *ngIf="showForm">
+        <div class="form-header">
+          <h2>🛒 Nouvelle vente</h2>
+          <p>Ajoutez des produits au panier et enregistrez la vente</p>
+        </div>
+
+        <div class="error-box" *ngIf="errorMessage">
+          <i class="ti ti-alert-circle"></i> {{ errorMessage }}
+        </div>
+
+        <div class="vente-layout">
+
+          <!-- LISTE PRODUITS -->
+          <div class="produits-liste">
+            <h3>Produits disponibles</h3>
+            <div class="produit-item" *ngFor="let p of produits" (click)="ajouterAuPanier(p)">
+              <div class="produit-avatar-sm">{{ p.nom.charAt(0) }}</div>
+              <div class="produit-details">
+                <p class="produit-nom-sm">{{ p.nom }}</p>
+                <p class="produit-prix-sm">{{ p.prix_vente | number }} F</p>
+              </div>
+              <div class="produit-stock-sm">
+                <span>{{ p.quantite_stock }} en stock</span>
+                <button class="btn-ajouter">
+                  <i class="ti ti-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANIER -->
+          <div class="panier">
+            <h3>Panier</h3>
+
+            <div class="panier-vide" *ngIf="panier.length === 0">
+              <i class="ti ti-shopping-cart-off"></i>
+              <p>Le panier est vide</p>
+              <span>Cliquez sur un produit pour l'ajouter</span>
+            </div>
+
+            <div class="panier-items" *ngIf="panier.length > 0">
+              <div class="panier-item" *ngFor="let item of panier; let i = index">
+                <div class="panier-item-info">
+                  <p class="panier-nom">{{ item.produit_nom }}</p>
+                  <p class="panier-prix">{{ item.prix_unitaire | number }} F/unité</p>
+                </div>
+                <div class="panier-qty">
+                  <button (click)="changerQuantite(item, -1)">−</button>
+                  <span>{{ item.quantite }}</span>
+                  <button (click)="changerQuantite(item, 1)">+</button>
+                </div>
+                <div class="panier-sous-total">
+                  {{ item.prix_unitaire * item.quantite | number }} F
+                </div>
+                <button class="btn-retirer" (click)="retirerDuPanier(i)">
+                  <i class="ti ti-x"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- TOTAL -->
+            <div class="panier-total" *ngIf="panier.length > 0">
+              <div class="total-ligne">
+                <span>Total</span>
+                <span class="total-montant">{{ montantTotal | number }} F</span>
+              </div>
+            </div>
+
+            <!-- FORMULAIRE VENTE -->
+            <form [formGroup]="venteForm" (ngSubmit)="enregistrerVente()" *ngIf="panier.length > 0">
+
+              <div class="form-group">
+                <label>Client (optionnel)</label>
+                <select formControlName="client">
+                  <option value="">Client anonyme</option>
+                  <option *ngFor="let c of clients" [value]="c.id">
+                    {{ c.nom }} {{ c.prenom }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Statut</label>
+                <select formControlName="statut">
+                  <option value="payee">Payée</option>
+                  <option value="en_attente">En attente</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Montant reçu (F) *</label>
+                <div class="input-prefix">
+                  <span>F</span>
+                  <input type="number" formControlName="montant_recu"
+                    [placeholder]="montantTotal.toString()" />
+                </div>
+              </div>
+
+              <div class="monnaie" *ngIf="venteForm.get('montant_recu')?.value">
+                <span>Monnaie à rendre</span>
+                <span class="monnaie-montant" [ngClass]="{
+                  'monnaie-ok'  : monnaieRendu >= 0,
+                  'monnaie-err' : monnaieRendu < 0
+                }">{{ monnaieRendu | number }} F</span>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-submit" [disabled]="panier.length === 0">
+                  <i class="ti ti-check"></i> Enregistrer la vente
+                </button>
+                <button type="button" class="btn-cancel" (click)="fermerForm()">
+                  <i class="ti ti-x"></i> Annuler
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTRES -->
+      <div class="filters" *ngIf="!showForm">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" placeholder="Rechercher une vente..." (input)="onSearch($event)" />
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement des ventes...</p>
+      </div>
+
+      <!-- LISTE VENTES -->
+      <div *ngIf="!isLoading && !showForm">
+
+        <div class="empty" *ngIf="ventesFiltres.length === 0">
+          <div class="empty-icon">🛒</div>
+          <h3>Aucune vente enregistrée</h3>
+          <p>Commencez par enregistrer votre première vente</p>
+          <button class="btn-primary" (click)="ouvrirFormVente()">
+            <i class="ti ti-plus"></i> Nouvelle vente
+          </button>
+        </div>
+
+        <div class="table-wrap" *ngIf="ventesFiltres.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Client</th>
+                <th>Montant total</th>
+                <th>Montant reçu</th>
+                <th>Monnaie</th>
+                <th>Statut</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of ventesFiltres">
+                <td><span class="vente-id">#{{ v.id }}</span></td>
+                <td>{{ v.client_nom || 'Client anonyme' }}</td>
+                <td class="td-price">{{ v.montant_total | number }} F</td>
+                <td class="td-price">{{ v.montant_recu | number }} F</td>
+                <td class="td-price">{{ v.monnaie_rendu | number }} F</td>
+                <td>
+                  <span class="tag" [ngClass]="{
+                    'tag-success' : v.statut === 'payee',
+                    'tag-warning' : v.statut === 'en_attente',
+                    'tag-danger'  : v.statut === 'annulee'
+                  }">
+                    {{ v.statut === 'payee' ? '✓ Payée' : v.statut === 'en_attente' ? '⏳ Attente' : '✗ Annulée' }}
+                  </span>
+                </td>
+                <td>{{ v.date_vente | date:'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

@@ -1,0 +1,200 @@
+<div class="wrap">
+
+  <app-sidebar activePage="produits"></app-sidebar>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">Gestion des Produits</h1>
+        <p class="page-sub">{{ produits.length }} produit(s) dans votre catalogue</p>
+      </div>
+      <button class="btn-primary" (click)="openModal()">
+        <i class="ti ti-plus"></i> Ajouter un produit
+      </button>
+    </header>
+
+    <div class="content">
+
+      <div class="toast-success" *ngIf="successMessage">
+        <i class="ti ti-circle-check"></i> {{ successMessage }}
+      </div>
+
+      <div class="form-section" *ngIf="showModal">
+        <div class="form-header">
+          <div>
+            <h2>{{ isEditing ? '✏️ Modifier le produit' : '📦 Nouveau produit' }}</h2>
+            <p>Remplissez les informations du produit</p>
+          </div>
+        </div>
+
+        <div class="error-box" *ngIf="errorMessage">
+          <i class="ti ti-alert-circle"></i> {{ errorMessage }}
+        </div>
+
+        <form [formGroup]="produitForm" (ngSubmit)="saveProduit()">
+
+          <div class="image-upload-zone" (click)="fileInput.click()">
+            <img *ngIf="imagePreview" [src]="imagePreview" alt="aperçu" class="image-preview" />
+            <div *ngIf="!imagePreview" class="image-placeholder">
+              <i class="ti ti-camera"></i>
+              <p>Cliquez pour ajouter une photo</p>
+              <span>JPG, PNG — max 2MB</span>
+            </div>
+            <input #fileInput type="file" accept="image/*" (change)="onImageChange($event)" style="display:none" />
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nom du produit <span class="required">*</span></label>
+              <input type="text" formControlName="nom" placeholder="Ex: Sucre blanc 1kg" />
+              <span class="err" *ngIf="produitForm.get('nom')?.invalid && produitForm.get('nom')?.touched">
+                Champ requis
+              </span>
+            </div>
+            <div class="form-group">
+              <label>Catégorie</label>
+              <select formControlName="categorie">
+                <option value="">Sans catégorie</option>
+                <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.nom }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description" placeholder="Décrivez le produit..." rows="3"></textarea>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Prix d'achat (FCFA) <span class="required">*</span></label>
+              <div class="input-prefix">
+                <span>F</span>
+                <input type="number" formControlName="prix_achat" placeholder="0" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Prix de vente (FCFA) <span class="required">*</span></label>
+              <div class="input-prefix">
+                <span>F</span>
+                <input type="number" formControlName="prix_vente" placeholder="0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Quantité en stock <span class="required">*</span></label>
+              <input type="number" formControlName="quantite_stock" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label>Seuil d'alerte stock</label>
+              <input type="number" formControlName="seuil_alerte" placeholder="5" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit" [disabled]="produitForm.invalid">
+              <i class="ti ti-check"></i>
+              {{ isEditing ? 'Enregistrer les modifications' : 'Ajouter le produit' }}
+            </button>
+            <button type="button" class="btn-cancel" (click)="closeModal()">
+              <i class="ti ti-x"></i> Annuler
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="filters" *ngIf="!showModal">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" placeholder="Rechercher un produit..." (input)="onSearch($event)" />
+        </div>
+        <select class="select-filter" (change)="onFilterCat($event)">
+          <option value="">Toutes les catégories</option>
+          <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.nom }}</option>
+        </select>
+      </div>
+
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement des produits...</p>
+      </div>
+
+      <div *ngIf="!isLoading && !showModal">
+
+        <div class="empty" *ngIf="produitsFiltres.length === 0">
+          <div class="empty-icon">📦</div>
+          <h3>Aucun produit trouvé</h3>
+          <p>Commencez par ajouter votre premier produit</p>
+          <button class="btn-primary" (click)="openModal()">
+            <i class="ti ti-plus"></i> Ajouter un produit
+          </button>
+        </div>
+
+        <div class="table-wrap" *ngIf="produitsFiltres.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Catégorie</th>
+                <th>Prix achat</th>
+                <th>Prix vente</th>
+                <th>Stock</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of produitsFiltres">
+                <td>
+                  <div class="p-info">
+                    <div class="p-img" *ngIf="p.image">
+                      <img [src]="p.image" [alt]="p.nom" />
+                    </div>
+                    <div class="p-avatar" *ngIf="!p.image">
+                      {{ p.nom.charAt(0).toUpperCase() }}
+                    </div>
+                    <div>
+                      <p class="p-nom">{{ p.nom }}</p>
+                      <p class="p-desc">{{ p.description || '—' }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="tag-cat">{{ p.categorie_nom || 'Sans catégorie' }}</span></td>
+                <td class="td-price">{{ p.prix_achat | number }} F</td>
+                <td class="td-price">{{ p.prix_vente | number }} F</td>
+                <td>
+                  <span class="stock-num" [ngClass]="{
+                    'danger' : p.quantite_stock <= 2,
+                    'warn'   : p.quantite_stock > 2 && p.stock_faible,
+                    'ok'     : !p.stock_faible
+                  }">{{ p.quantite_stock }}</span>
+                </td>
+                <td>
+                  <span class="tag" [ngClass]="{
+                    'tag-danger'  : p.stock_faible,
+                    'tag-success' : !p.stock_faible
+                  }">{{ p.stock_faible ? '⚠ Stock faible' : '✓ En stock' }}</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button class="act-edit" (click)="openModal(p)" title="Modifier">
+                      <i class="ti ti-edit"></i>
+                    </button>
+                    <button class="act-del" (click)="deleteProduit(p.id)" title="Supprimer">
+                      <i class="ti ti-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
