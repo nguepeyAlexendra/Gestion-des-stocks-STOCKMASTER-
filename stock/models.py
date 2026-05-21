@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 class Categorie(models.Model):
     nom         = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    icone       = models.CharField(max_length=10, blank=True, null=True, default='🏷️')
     user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='categories')
     created_at  = models.DateTimeField(auto_now_add=True)
 

@@ -43,7 +43,7 @@ class CategorieSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = Categorie
-        fields = ['id', 'nom', 'description', 'nombre_produits', 'created_at']
+        fields = ['id', 'nom', 'description', 'icone', 'nombre_produits', 'created_at']
 
     def get_nombre_produits(self, obj):
         return obj.produits.count()
@@ -113,6 +113,9 @@ class LigneVenteSerializer(serializers.ModelSerializer):
     class Meta:
         model  = LigneVente
         fields = ['id', 'produit', 'produit_nom', 'quantite', 'prix_unitaire', 'sous_total']
+        extra_kwargs = {
+            'sous_total': {'required': False}
+        }
 
     def validate(self, data):
         produit  = data.get('produit')
@@ -123,6 +126,8 @@ class LigneVenteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f"Stock insuffisant. Disponible : {produit.quantite_stock}"
             )
+        # Calcul automatique du sous_total
+        data['sous_total'] = data['quantite'] * data['prix_unitaire']
         return data
 
 
@@ -130,8 +135,8 @@ class LigneVenteSerializer(serializers.ModelSerializer):
 # VENTE
 # ──────────────────────────────────────────
 class VenteSerializer(serializers.ModelSerializer):
-    lignes       = LigneVenteSerializer(many=True)
-    client_nom   = serializers.CharField(source='client.nom', read_only=True)
+    lignes     = LigneVenteSerializer(many=True)
+    client_nom = serializers.CharField(source='client.nom', read_only=True)
 
     class Meta:
         model  = Vente
@@ -147,36 +152,33 @@ class VenteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         lignes_data = validated_data.pop('lignes')
-        user        = self.context['request'].user
+        validated_data.pop('user', None)
+        user = self.context['request'].user
 
-        # Calcul du montant total
         montant_total = sum(
             l['quantite'] * l['prix_unitaire'] for l in lignes_data
         )
         montant_recu  = validated_data.get('montant_recu', montant_total)
         monnaie_rendu = montant_recu - montant_total
 
-        # Création de la vente
         vente = Vente.objects.create(
             **validated_data,
-            montant_total  = montant_total,
-            monnaie_rendu  = monnaie_rendu,
-            user           = user
+            montant_total = montant_total,
+            monnaie_rendu = monnaie_rendu,
+            user          = user
         )
 
-        # Création des lignes + mise à jour du stock
         for ligne_data in lignes_data:
-            produit = ligne_data['produit']
+            produit    = ligne_data['produit']
+            sous_total = ligne_data['quantite'] * ligne_data['prix_unitaire']
+            ligne_data.pop('sous_total', None)
             LigneVente.objects.create(
-                vente         = vente,
-                sous_total    = ligne_data['quantite'] * ligne_data['prix_unitaire'],
+                vente      = vente,
+                sous_total = sous_total,
                 **ligne_data
             )
-            # Déduire du stock automatiquement
             produit.quantite_stock -= ligne_data['quantite']
             produit.save()
-
-        # Génération automatique de la facture
         Facture.objects.create(
             vente         = vente,
             montant_total = montant_total,
@@ -184,8 +186,6 @@ class VenteSerializer(serializers.ModelSerializer):
         )
 
         return vente
-
-
 # ──────────────────────────────────────────
 # FACTURE
 # ──────────────────────────────────────────
