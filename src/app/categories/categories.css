@@ -227,3 +227,46 @@
 .act-edit:hover   { background: #6d4fc2; }
 .act-del    { background: #fce8e8; }
 .act-del:hover    { background: #e24b4a; }
+
+/* ── DARK MODE ── */
+.dark-mode { background: #0f0a1e; }
+.dark-mode .main        { background: #0f0a1e; }
+.dark-mode .topbar      { background: #1a1035; border-color: #2d1f5e; }
+.dark-mode .topbar-title { color: #e0d8ff; }
+.dark-mode .topbar-sub  { color: #9b8fc0; }
+.dark-mode .card        { background: #1e1338; border-color: #2d1f5e; }
+.dark-mode .form-title  { color: #e0d8ff; }
+.dark-mode .form-group label { color: #e0d8ff; }
+.dark-mode .form-group input,
+.dark-mode .form-group textarea { background: #2d1f5e; border-color: #3d2f7e; color: #e0d8ff; }
+.dark-mode .cat-card    { background: #1e1338; border-color: #2d1f5e; }
+.dark-mode .cat-card:hover { border-color: #a78bfa; }
+.dark-mode .cat-info h3 { color: #e0d8ff; }
+.dark-mode .cat-info p  { color: #9b8fc0; }
+.dark-mode .cat-count   { background: #2d1f5e; color: #a78bfa; }
+.dark-mode .detail-nom  { color: #e0d8ff; }
+.dark-mode .detail-desc { color: #9b8fc0; }
+.dark-mode .detail-item { background: #2d1f5e; border-color: #3d2f7e; }
+.dark-mode .detail-val  { color: #e0d8ff; }
+.dark-mode .detail-label { color: #9b8fc0; }
+.dark-mode .detail-icon { background: #2d1f5e; border-color: #3d2f7e; }
+.dark-mode .emoji-item  { background: #2d1f5e; border-color: #3d2f7e; }
+.dark-mode .emoji-item:hover { background: #3d2f7e; border-color: #a78bfa; }
+.dark-mode .emoji-item.selected { background: #3d2f7e; border-color: #a78bfa; }
+.dark-mode .act-detail  { background: #2d1f5e; }
+.dark-mode .act-edit    { background: #2d1f5e; }
+.dark-mode .act-del     { background: rgba(226,75,74,0.2); }
+.dark-mode .empty-state h3 { color: #e0d8ff; }
+.dark-mode .modal-confirm  { background: #1e1338; }
+.dark-mode .modal-title    { color: #e0d8ff; }
+.dark-mode .modal-msg      { color: #9b8fc0; }
+
+/* ── DARK BTN ── */
+.dark-btn {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: #ede9ff; border: 1px solid #e8e5f5;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; transition: all 0.2s;
+}
+.dark-btn:hover { background: #7c5cbf; }
+.dark-mode .dark-btn { background: #2d1f5e; border-color: #3d2f7e; }

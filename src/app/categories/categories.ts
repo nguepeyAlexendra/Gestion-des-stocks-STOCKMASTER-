@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SidebarComponent } from '../shared/sidebar/sidebar';
+import { DarkModeService } from '../shared/dark-mode';
 
 @Component({
   selector   : 'app-categories',
@@ -30,11 +31,13 @@ export class CategoriesComponent implements OnInit {
     '🎮','🚗','🏠','🌿','💄','🧸','⚽','🎵',
     '🔑','💡','🧲','🪑','🛁','🍳','🧺','🌸'
   ];
-
+isDark  = false;
+isAdmin = false;
   constructor(
     private http   : HttpClient,
     private fb     : FormBuilder,
-    private router : Router
+    private router : Router ,
+    private darkModeService : DarkModeService
   ) {
     this.categorieForm = this.fb.group({
       nom         : ['', [Validators.required]],
@@ -43,7 +46,16 @@ export class CategoriesComponent implements OnInit {
     });
   }
 
-  ngOnInit() { this.loadCategories(); }
+  ngOnInit() {
+  this.isDark  = this.darkModeService.getDarkMode();
+  this.isAdmin = localStorage.getItem('user_role') === 'admin';
+  this.loadCategories();
+}
+
+toggleDark(): void {
+  this.darkModeService.toggleDark();
+  this.isDark = this.darkModeService.getDarkMode();
+}
 
   loadCategories() {
     this.isLoading = true;

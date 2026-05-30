@@ -1,4 +1,4 @@
-<div class="app">
+<div class="app" [class.dark-mode]="isDark">
 
   <app-sidebar activePage="categories"></app-sidebar>
 
@@ -11,9 +11,12 @@
         <div class="topbar-sub">{{ categories.length }} catégorie(s) enregistrée(s)</div>
       </div>
       <div class="topbar-right">
-        <button class="btn-primary" (click)="openForm()">
+        <button class="btn-primary" (click)="openForm()" *ngIf="isAdmin">
           + Ajouter une catégorie
         </button>
+        <div class="dark-btn" (click)="toggleDark()">
+          {{ isDark ? '☀️' : '🌙' }}
+        </div>
       </div>
     </div>
 
@@ -25,7 +28,7 @@
       </div>
 
       <!-- FORMULAIRE -->
-      <div class="card form-card" *ngIf="showForm">
+      <div class="card form-card" *ngIf="showForm && isAdmin">
         <div class="form-header">
           <div class="form-title">{{ isEditing ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</div>
           <div class="form-sub">Remplissez les informations de la catégorie</div>
@@ -35,7 +38,6 @@
 
         <form [formGroup]="categorieForm" (ngSubmit)="saveCategorie()">
 
-          <!-- CHOIX ICONE -->
           <div class="form-group">
             <label>Icône</label>
             <div class="emoji-selected">
@@ -111,7 +113,7 @@
           <div class="empty-icon">🏷️</div>
           <h3>Aucune catégorie</h3>
           <p>Commencez par créer votre première catégorie</p>
-          <button class="btn-primary" (click)="openForm()">+ Ajouter une catégorie</button>
+          <button class="btn-primary" (click)="openForm()" *ngIf="isAdmin">+ Ajouter une catégorie</button>
         </div>
 
         <div class="cards-grid" *ngIf="categories.length > 0">
@@ -124,8 +126,8 @@
             </div>
             <div class="cat-actions">
               <button class="act-btn act-detail" (click)="voirDetail(cat)" title="Voir détails">👁</button>
-              <button class="act-btn act-edit"   (click)="openForm(cat)"   title="Modifier">✏️</button>
-              <button class="act-btn act-del"    (click)="deleteCategorie(cat.id)" title="Supprimer">🗑</button>
+              <button class="act-btn act-edit" (click)="openForm(cat)" title="Modifier" *ngIf="isAdmin">✏️</button>
+              <button class="act-btn act-del" (click)="deleteCategorie(cat.id)" title="Supprimer" *ngIf="isAdmin">🗑</button>
             </div>
           </div>
         </div>
