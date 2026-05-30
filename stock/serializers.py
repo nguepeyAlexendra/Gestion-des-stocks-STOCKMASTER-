@@ -1,11 +1,22 @@
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import serializers
-from .models import Categorie, Fournisseur, Produit, Client, Vente, LigneVente, Facture, EntreeStock
+from .models import (
+    ProfilUtilisateur, Categorie, Fournisseur, Produit,
+    Client, Vente, LigneVente, Facture, EntreeStock
+)
+import random
+import string
 
 
-# ──────────────────────────────────────────
-# AUTH
-# ──────────────────────────────────────────
+def generer_mot_de_passe():
+    caracteres = string.ascii_letters + string.digits + '!@#$%'
+    return ''.join(random.choices(caracteres, k=10))
+
+
+# ── AUTH ──
 class RegisterSerializer(serializers.ModelSerializer):
     password  = serializers.CharField(write_only=True, min_length=6)
     password2 = serializers.CharField(write_only=True, min_length=6)
@@ -26,18 +37,139 @@ class RegisterSerializer(serializers.ModelSerializer):
             email    = validated_data.get('email', ''),
             password = validated_data['password']
         )
+        ProfilUtilisateur.objects.create(user=user, role='utilisateur')
         return user
 
 
 class UserSerializer(serializers.ModelSerializer):
+    role     = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+
     class Meta:
         model  = User
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'username', 'email', 'role', 'is_admin']
+
+    def get_role(self, obj):
+        try:
+            return obj.profil.role
+        except:
+            return 'utilisateur'
+
+    def get_is_admin(self, obj):
+        try:
+            return obj.profil.is_admin
+        except:
+            return False
 
 
-# ──────────────────────────────────────────
-# CATEGORIE
-# ──────────────────────────────────────────
+# ── CREATION UTILISATEUR PAR ADMIN ──
+class CreateUserSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    email    = serializers.EmailField()
+    role     = serializers.ChoiceField(choices=['admin', 'utilisateur'])
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Ce nom d'utilisateur existe déjà.")
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Cet email existe déjà.")
+        return value
+
+    def create(self, validated_data):
+        mot_de_passe = generer_mot_de_passe()
+        user = User.objects.create_user(
+            username = validated_data['username'],
+            email    = validated_data['email'],
+            password = mot_de_passe
+        )
+        ProfilUtilisateur.objects.create(user=user, role=validated_data['role'])
+
+        role_label = 'Administrateur' if validated_data['role'] == 'admin' else 'Utilisateur'
+
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:sans-serif;">
+  <div style="max-width:520px;margin:2rem auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e0e0e0;">
+    <div style="background:#0F6E56;padding:2.5rem 2rem;text-align:center;">
+      <div style="width:70px;height:70px;background:#1D9E75;border-radius:12px;margin:0 auto 1rem;text-align:center;">
+        <span style="color:white;font-size:28px;font-weight:700;line-height:70px;display:block;">SM</span>
+      </div>
+      <h1 style="color:white;font-size:24px;font-weight:500;margin:0 0 0.5rem;letter-spacing:2px;">STOCKMASTER</h1>
+      <p style="color:rgba(255,255,255,0.7);font-size:12px;margin:0;letter-spacing:3px;">GESTION DES STOCKS</p>
+    </div>
+    <div style="padding:2rem;">
+      <div style="text-align:center;margin-bottom:1.5rem;">
+        <span style="display:inline-block;background:#e1f5ee;color:#0F6E56;padding:6px 16px;border-radius:999px;font-size:13px;font-weight:500;">
+          Compte cree avec succes
+        </span>
+      </div>
+      <h2 style="font-size:18px;font-weight:500;margin:0 0 0.75rem;">Bonjour {user.username} !</h2>
+      <p style="font-size:15px;color:#666;line-height:1.7;margin:0 0 1.5rem;">
+        Votre compte a ete cree sur la plateforme StockMaster.
+        Vous pouvez des maintenant vous connecter avec les identifiants ci-dessous.
+      </p>
+      <div style="background:#f9f9f9;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.5rem;">
+        <p style="font-size:13px;color:#888;margin:0 0 0.75rem;font-weight:500;">Vos identifiants de connexion</p>
+        <p style="font-size:14px;margin:0 0 8px;">
+          <span style="color:#888;">Nom d&#39;utilisateur : </span>
+          <span style="font-weight:500;">{user.username}</span>
+        </p>
+        <p style="font-size:14px;margin:0 0 8px;">
+          <span style="color:#888;">Email : </span>
+          <span style="font-weight:500;">{user.email}</span>
+        </p>
+        <p style="font-size:14px;margin:0 0 8px;">
+          <span style="color:#888;">Mot de passe : </span>
+          <span style="font-weight:700;color:#0F6E56;background:#e1f5ee;padding:2px 8px;border-radius:4px;">{mot_de_passe}</span>
+        </p>
+        <p style="font-size:14px;margin:0;">
+          <span style="color:#888;">Role : </span>
+          <span style="font-weight:500;">{role_label}</span>
+        </p>
+      </div>
+      <table style="width:100%;">
+        <tr>
+          <td style="text-align:center;">
+            <a href="http://localhost:4200/auth/login"
+               style="display:inline-block;background:#1D9E75;color:white;text-decoration:none;padding:12px 40px;border-radius:8px;font-size:15px;font-weight:500;">
+              Se connecter a StockMaster
+            </a>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div style="padding:1.25rem 2rem;border-top:1px solid #eee;text-align:center;">
+      <p style="font-size:12px;color:#aaa;margin:0;">
+        Cet email a ete envoye automatiquement - merci de ne pas y repondre.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+        """
+
+        text_content = f"Bonjour {user.username}, votre compte StockMaster a ete cree. Identifiants : username={user.username}, password={mot_de_passe}. Connectez-vous sur http://localhost:4200/auth/login"
+
+        try:
+            from django.core.mail import EmailMultiAlternatives
+            msg = EmailMultiAlternatives(
+                subject    = 'Vos identifiants StockMaster',
+                body       = text_content,
+                from_email = settings.DEFAULT_FROM_EMAIL,
+                to         = [user.email]
+            )
+            msg.attach_alternative(html_content, "text/html")
+            msg.send(fail_silently=True)
+        except Exception as e:
+            print(f"Erreur envoi email: {e}")
+
+        return user
+
+# ── CATEGORIE ──
 class CategorieSerializer(serializers.ModelSerializer):
     nombre_produits = serializers.SerializerMethodField()
 
@@ -49,30 +181,36 @@ class CategorieSerializer(serializers.ModelSerializer):
         return obj.produits.count()
 
 
-# ──────────────────────────────────────────
-# FOURNISSEUR
-# ──────────────────────────────────────────
+# ── FOURNISSEUR ──
 class FournisseurSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Fournisseur
         fields = ['id', 'nom', 'telephone', 'email', 'adresse', 'created_at']
 
 
-# ──────────────────────────────────────────
-# PRODUIT
-# ──────────────────────────────────────────
+# ── PRODUIT ──
 class ProduitSerializer(serializers.ModelSerializer):
-    categorie_nom   = serializers.CharField(source='categorie.nom', read_only=True)
-    stock_faible    = serializers.ReadOnlyField()
+    categorie_nom     = serializers.CharField(source='categorie.nom', read_only=True)
+    stock_faible      = serializers.ReadOnlyField()
     benefice_unitaire = serializers.ReadOnlyField()
+    image_url         = serializers.SerializerMethodField()
 
     class Meta:
         model  = Produit
         fields = [
             'id', 'nom', 'description', 'prix_vente', 'prix_achat',
             'quantite_stock', 'seuil_alerte', 'categorie', 'categorie_nom',
-            'stock_faible', 'benefice_unitaire', 'created_at', 'updated_at'
+            'stock_faible', 'benefice_unitaire', 'image', 'image_url',
+            'created_at', 'updated_at'
         ]
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return f'http://127.0.0.1:8000{obj.image.url}'
+        return None
 
     def validate_prix_vente(self, value):
         if value <= 0:
@@ -90,9 +228,7 @@ class ProduitSerializer(serializers.ModelSerializer):
         return value
 
 
-# ──────────────────────────────────────────
-# CLIENT
-# ──────────────────────────────────────────
+# ── CLIENT ──
 class ClientSerializer(serializers.ModelSerializer):
     nombre_achats = serializers.SerializerMethodField()
 
@@ -104,45 +240,50 @@ class ClientSerializer(serializers.ModelSerializer):
         return obj.ventes.count()
 
 
-# ──────────────────────────────────────────
-# LIGNE DE VENTE
-# ──────────────────────────────────────────
+# ── LIGNE DE VENTE ──
 class LigneVenteSerializer(serializers.ModelSerializer):
     produit_nom = serializers.CharField(source='produit.nom', read_only=True)
 
     class Meta:
         model  = LigneVente
         fields = ['id', 'produit', 'produit_nom', 'quantite', 'prix_unitaire', 'sous_total']
-        extra_kwargs = {
-            'sous_total': {'required': False}
-        }
+        extra_kwargs = {'sous_total': {'required': False}}
 
     def validate(self, data):
-        produit  = data.get('produit')
-        quantite = data.get('quantite')
+        produit       = data.get('produit')
+        quantite      = data.get('quantite')
+        prix_unitaire = data.get('prix_unitaire')
+
         if quantite <= 0:
             raise serializers.ValidationError("La quantité doit être supérieure à 0.")
+
         if produit and quantite > produit.quantite_stock:
             raise serializers.ValidationError(
                 f"Stock insuffisant. Disponible : {produit.quantite_stock}"
             )
-        # Calcul automatique du sous_total
-        data['sous_total'] = data['quantite'] * data['prix_unitaire']
+
+        # Règle : prix unitaire ne peut pas être inférieur au prix de vente
+        if produit and prix_unitaire < produit.prix_vente:
+            raise serializers.ValidationError(
+                f"Le prix unitaire ({prix_unitaire} F) ne peut pas être inférieur au prix de vente ({produit.prix_vente} F)."
+            )
+
+        data['sous_total'] = quantite * prix_unitaire
         return data
 
 
-# ──────────────────────────────────────────
-# VENTE
-# ──────────────────────────────────────────
+# ── VENTE ──
 class VenteSerializer(serializers.ModelSerializer):
     lignes     = LigneVenteSerializer(many=True)
     client_nom = serializers.CharField(source='client.nom', read_only=True)
+    vendeur    = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model  = Vente
         fields = [
             'id', 'date_vente', 'montant_total', 'montant_recu',
-            'monnaie_rendu', 'statut', 'client', 'client_nom', 'lignes'
+            'monnaie_rendu', 'statut', 'client', 'client_nom',
+            'vendeur', 'lignes'
         ]
 
     def validate_montant_recu(self, value):
@@ -155,9 +296,7 @@ class VenteSerializer(serializers.ModelSerializer):
         validated_data.pop('user', None)
         user = self.context['request'].user
 
-        montant_total = sum(
-            l['quantite'] * l['prix_unitaire'] for l in lignes_data
-        )
+        montant_total = sum(l['quantite'] * l['prix_unitaire'] for l in lignes_data)
         montant_recu  = validated_data.get('montant_recu', montant_total)
         monnaie_rendu = montant_recu - montant_total
 
@@ -177,8 +316,10 @@ class VenteSerializer(serializers.ModelSerializer):
                 sous_total = sous_total,
                 **ligne_data
             )
+            # Stock partagé — diminue pour tous
             produit.quantite_stock -= ligne_data['quantite']
             produit.save()
+
         Facture.objects.create(
             vente         = vente,
             montant_total = montant_total,
@@ -186,19 +327,21 @@ class VenteSerializer(serializers.ModelSerializer):
         )
 
         return vente
-# ──────────────────────────────────────────
-# FACTURE
-# ──────────────────────────────────────────
+
+
+# ── FACTURE ──
 class FactureSerializer(serializers.ModelSerializer):
-    vente_id    = serializers.IntegerField(source='vente.id', read_only=True)
-    client_nom  = serializers.SerializerMethodField()
-    lignes      = serializers.SerializerMethodField()
+    vente_id   = serializers.IntegerField(source='vente.id', read_only=True)
+    client_nom = serializers.SerializerMethodField()
+    lignes     = serializers.SerializerMethodField()
+    vendeur    = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model  = Facture
         fields = [
             'id', 'numero_facture', 'date_emission',
-            'montant_total', 'statut', 'vente_id', 'client_nom', 'lignes'
+            'montant_total', 'statut', 'vente_id',
+            'client_nom', 'lignes', 'vendeur'
         ]
 
     def get_client_nom(self, obj):
@@ -210,9 +353,7 @@ class FactureSerializer(serializers.ModelSerializer):
         return LigneVenteSerializer(obj.vente.lignes.all(), many=True).data
 
 
-# ──────────────────────────────────────────
-# ENTREE STOCK
-# ──────────────────────────────────────────
+# ── ENTREE STOCK ──
 class EntreeStockSerializer(serializers.ModelSerializer):
     produit_nom     = serializers.CharField(source='produit.nom', read_only=True)
     fournisseur_nom = serializers.CharField(source='fournisseur.nom', read_only=True)

@@ -1,41 +1,51 @@
+from datetime import datetime, date  
+
 from django.contrib.auth.models import User
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Categorie, Fournisseur, Produit, Client, Vente, Facture, EntreeStock
+
+from .models import (
+    ProfilUtilisateur, Categorie, Fournisseur, Produit,
+    Client, Vente, Facture, EntreeStock
+)
 from .serializers import (
-    RegisterSerializer, UserSerializer,
+    RegisterSerializer, UserSerializer, CreateUserSerializer,
     CategorieSerializer, FournisseurSerializer, ProduitSerializer,
     ClientSerializer, VenteSerializer, FactureSerializer, EntreeStockSerializer
 )
 
 
-# ──────────────────────────────────────────
-# AUTH
-# ──────────────────────────────────────────
-class RegisterView(generics.CreateAPIView):
-    queryset           = User.objects.all()
-    serializer_class   = RegisterSerializer
+# ── PERMISSIONS PERSONNALISEES ──
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        try:
+            return request.user.profil.is_admin
+        except:
+            return False
+
+class IsAdminOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return request.user.is_authenticated
+        try:
+            return request.user.profil.is_admin
+        except:
+            return False
+
+
+# ── AUTH ──
+class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'message' : 'Compte créé avec succès !',
-            'user'    : UserSerializer(user).data,
-            'tokens'  : {
-                'refresh': str(refresh),
-                'access' : str(refresh.access_token),
-            }
-        }, status=201)
-
-
+    def post(self, request):
+        return Response(
+            {'error': 'La création de compte est réservée aux administrateurs. Contactez votre administrateur.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -43,46 +53,63 @@ class ProfileView(APIView):
         return Response(UserSerializer(request.user).data)
 
 
-# ──────────────────────────────────────────
-# CATEGORIE
-# ──────────────────────────────────────────
+# ── GESTION UTILISATEURS PAR ADMIN ──
+class CreateUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        serializer = CreateUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response({
+            'message' : f'Utilisateur {user.username} créé avec succès ! Un email a été envoyé.',
+            'user'    : UserSerializer(user).data
+        }, status=201)
+
+    def get(self, request):
+        users = User.objects.all().select_related('profil')
+        return Response(UserSerializer(users, many=True).data)
+
+
+class DeleteUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def delete(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+            if user == request.user:
+                return Response({'error': 'Vous ne pouvez pas supprimer votre propre compte.'}, status=400)
+            user.delete()
+            return Response({'message': 'Utilisateur supprimé.'})
+        except User.DoesNotExist:
+            return Response({'error': 'Utilisateur introuvable.'}, status=404)
+
+
+# ── CATEGORIE ──
 class CategorieViewSet(viewsets.ModelViewSet):
     serializer_class   = CategorieSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
-        return Categorie.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        return Categorie.objects.all()
 
 
-# ──────────────────────────────────────────
-# FOURNISSEUR
-# ──────────────────────────────────────────
+# ── FOURNISSEUR ──
 class FournisseurViewSet(viewsets.ModelViewSet):
     serializer_class   = FournisseurSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
-        return Fournisseur.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        return Fournisseur.objects.all()
 
 
-# ──────────────────────────────────────────
-# PRODUIT
-# ──────────────────────────────────────────
+# ── PRODUIT ──
 class ProduitViewSet(viewsets.ModelViewSet):
     serializer_class   = ProduitSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
-        return Produit.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        return Produit.objects.all()
 
     @action(detail=False, methods=['get'])
     def stock_faible(self, request):
@@ -94,73 +121,94 @@ class ProduitViewSet(viewsets.ModelViewSet):
     def statistiques(self, request):
         queryset = self.get_queryset()
         return Response({
-            'total_produits'          : queryset.count(),
-            'produits_stock_faible'   : len([p for p in queryset if p.stock_faible]),
-            'valeur_stock'            : sum(p.prix_achat * p.quantite_stock for p in queryset),
+            'total_produits'        : queryset.count(),
+            'produits_stock_faible' : len([p for p in queryset if p.stock_faible]),
+            'valeur_stock'          : sum(p.prix_achat * p.quantite_stock for p in queryset),
         })
 
 
-# ──────────────────────────────────────────
-# CLIENT
-# ──────────────────────────────────────────
+# ── CLIENT ──
 class ClientViewSet(viewsets.ModelViewSet):
     serializer_class   = ClientSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        try:
+            if self.request.user.profil.is_admin:
+                return Client.objects.all()
+        except:
+            pass
         return Client.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
-# ──────────────────────────────────────────
-# VENTE
-# ──────────────────────────────────────────
+# ── VENTE ──
+from rest_framework.exceptions import ValidationError\
+
+
+# ── VENTE ──
 class VenteViewSet(viewsets.ModelViewSet):
     serializer_class   = VenteSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        try:
+            # L'admin voit l'intégralité des ventes de tout le monde
+            if self.request.user.profil.is_admin:
+                return Vente.objects.all()
+        except ProfilUtilisateur.DoesNotExist:
+            pass
+        # Un utilisateur vendeur voit uniquement ses propres transactions
         return Vente.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
+        # Règle métier stricte : Interdiction pour un administrateur de vendre
+        try:
+            if self.request.user.profil.is_admin:
+                raise ValidationError({
+                    "detail": "Action interdite : Un gestionnaire/administrateur ne peut pas effectuer de ventes."
+                })
+        except ProfilUtilisateur.DoesNotExist:
+            pass
+            
         serializer.save(user=self.request.user)
 
     @action(detail=False, methods=['get'])
     def statistiques(self, request):
-        import datetime
-        queryset = self.get_queryset()
-        return Response({
-            'total_ventes'      : queryset.count(),
-            'chiffre_affaires'  : sum(v.montant_total for v in queryset),
-            'ventes_aujourdhui' : queryset.filter(
-                date_vente__date=datetime.date.today()
-            ).count(),
-        })
+     queryset = self.get_queryset()
+     return Response({
+        'total_ventes'      : queryset.count(),
+        'chiffre_affaires'  : float(sum(v.montant_total for v in queryset)),
+        'ventes_aujourdhui' : queryset.filter(
+            date_vente__date=date.today()  # ← corrigé
+        ).count(),
+    })
 
 
-# ──────────────────────────────────────────
-# FACTURE
-# ──────────────────────────────────────────
+# ── FACTURE ──
 class FactureViewSet(viewsets.ModelViewSet):
     serializer_class   = FactureSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names  = ['get', 'head', 'options']
 
     def get_queryset(self):
+        try:
+            if self.request.user.profil.is_admin:
+                return Facture.objects.all()
+        except:
+            pass
         return Facture.objects.filter(user=self.request.user)
 
 
-# ──────────────────────────────────────────
-# ENTREE STOCK
-# ──────────────────────────────────────────
+# ── ENTREE STOCK ──
 class EntreeStockViewSet(viewsets.ModelViewSet):
     serializer_class   = EntreeStockSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get_queryset(self):
-        return EntreeStock.objects.filter(user=self.request.user)
+        return EntreeStock.objects.all()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
