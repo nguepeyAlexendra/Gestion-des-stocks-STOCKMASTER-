@@ -1,40 +1,46 @@
-<div class="wrap">
+<div class="app">
 
   <app-sidebar activePage="categories"></app-sidebar>
 
   <main class="main">
 
-    <header class="topbar">
-      <div>
-        <h1 class="page-title">Catégories</h1>
-        <p class="page-sub">{{ categories.length }} catégorie(s) enregistrée(s)</p>
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">Gestion des Catégories</div>
+        <div class="topbar-sub">{{ categories.length }} catégorie(s) enregistrée(s)</div>
       </div>
-      <button class="btn-primary" (click)="openForm()">
-        <i class="ti ti-plus"></i> Ajouter une catégorie
-      </button>
-    </header>
+      <div class="topbar-right">
+        <button class="btn-primary" (click)="openForm()">
+          + Ajouter une catégorie
+        </button>
+      </div>
+    </div>
 
     <div class="content">
 
+      <!-- SUCCES -->
       <div class="toast-success" *ngIf="successMessage">
-        <i class="ti ti-circle-check"></i> {{ successMessage }}
+        ✅ {{ successMessage }}
       </div>
 
-      <div class="form-section" *ngIf="showForm">
+      <!-- FORMULAIRE -->
+      <div class="card form-card" *ngIf="showForm">
         <div class="form-header">
-          <h2>{{ isEditing ? '✏️ Modifier la catégorie' : '🏷️ Nouvelle catégorie' }}</h2>
-          <p>Remplissez les informations de la catégorie</p>
+          <div class="form-title">{{ isEditing ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</div>
+          <div class="form-sub">Remplissez les informations de la catégorie</div>
         </div>
 
-        <div class="error-box" *ngIf="errorMessage">
-          <i class="ti ti-alert-circle"></i> {{ errorMessage }}
-        </div>
+        <div class="error-box" *ngIf="errorMessage">⚠ {{ errorMessage }}</div>
 
         <form [formGroup]="categorieForm" (ngSubmit)="saveCategorie()">
 
           <!-- CHOIX ICONE -->
           <div class="form-group">
-            <label>Icône de la catégorie</label>
+            <label>Icône</label>
+            <div class="emoji-selected">
+              Sélectionné : <span class="emoji-big">{{ categorieForm.get('icone')?.value }}</span>
+            </div>
             <div class="emoji-grid">
               <div class="emoji-item"
                 *ngFor="let emoji of emojis"
@@ -46,11 +52,8 @@
           </div>
 
           <div class="form-group">
-            <label>Nom de la catégorie <span class="required">*</span></label>
+            <label>Nom de la catégorie *</label>
             <input type="text" formControlName="nom" placeholder="Ex: Alimentaire, Boissons..." />
-            <span class="err" *ngIf="categorieForm.get('nom')?.invalid && categorieForm.get('nom')?.touched">
-              Champ requis
-            </span>
           </div>
 
           <div class="form-group">
@@ -60,30 +63,55 @@
 
           <div class="form-actions">
             <button type="submit" class="btn-submit" [disabled]="categorieForm.invalid">
-              <i class="ti ti-check"></i>
-              {{ isEditing ? 'Enregistrer les modifications' : 'Ajouter la catégorie' }}
+              {{ isEditing ? 'Enregistrer' : 'Ajouter la catégorie' }}
             </button>
             <button type="button" class="btn-cancel" (click)="closeForm()">
-              <i class="ti ti-x"></i> Annuler
+              Annuler
             </button>
           </div>
+
         </form>
       </div>
 
-      <div class="loading" *ngIf="isLoading">
+      <!-- DETAIL CATEGORIE -->
+      <div class="card detail-card" *ngIf="showDetail">
+        <div class="detail-header">
+          <div class="detail-title">Détails de la catégorie</div>
+          <button class="btn-fermer" (click)="fermerDetail()">✕ Fermer</button>
+        </div>
+        <div class="detail-body">
+          <div class="detail-icon">{{ showDetail.icone || '🏷️' }}</div>
+          <div class="detail-infos">
+            <h2 class="detail-nom">{{ showDetail.nom }}</h2>
+            <p class="detail-desc">{{ showDetail.description || 'Pas de description' }}</p>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Nombre de produits</span>
+                <span class="detail-val">{{ showDetail.nombre_produits }} produit(s)</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Icône</span>
+                <span class="detail-val">{{ showDetail.icone || '🏷️' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading-wrap" *ngIf="isLoading">
         <div class="spinner"></div>
         <p>Chargement...</p>
       </div>
 
-      <div *ngIf="!isLoading && !showForm">
+      <!-- LISTE -->
+      <div *ngIf="!isLoading && !showForm && !showDetail">
 
-        <div class="empty" *ngIf="categories.length === 0">
+        <div class="empty-state" *ngIf="categories.length === 0">
           <div class="empty-icon">🏷️</div>
           <h3>Aucune catégorie</h3>
           <p>Commencez par créer votre première catégorie</p>
-          <button class="btn-primary" (click)="openForm()">
-            <i class="ti ti-plus"></i> Ajouter une catégorie
-          </button>
+          <button class="btn-primary" (click)="openForm()">+ Ajouter une catégorie</button>
         </div>
 
         <div class="cards-grid" *ngIf="categories.length > 0">
@@ -95,12 +123,9 @@
               <span class="cat-count">{{ cat.nombre_produits }} produit(s)</span>
             </div>
             <div class="cat-actions">
-              <button class="act-edit" (click)="openForm(cat)">
-                <i class="ti ti-edit"></i>
-              </button>
-              <button class="act-del" (click)="deleteCategorie(cat.id)">
-                <i class="ti ti-trash"></i>
-              </button>
+              <button class="act-btn act-detail" (click)="voirDetail(cat)" title="Voir détails">👁</button>
+              <button class="act-btn act-edit"   (click)="openForm(cat)"   title="Modifier">✏️</button>
+              <button class="act-btn act-del"    (click)="deleteCategorie(cat.id)" title="Supprimer">🗑</button>
             </div>
           </div>
         </div>

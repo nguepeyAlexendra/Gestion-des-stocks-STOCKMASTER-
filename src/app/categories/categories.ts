@@ -6,16 +6,17 @@ import { HttpClient } from '@angular/common/http';
 import { SidebarComponent } from '../shared/sidebar/sidebar';
 
 @Component({
-  selector: 'app-categories',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SidebarComponent],
+  selector   : 'app-categories',
+  standalone : true,
+  imports    : [CommonModule, ReactiveFormsModule, SidebarComponent],
   templateUrl: './categories.html',
-  styleUrls: ['./categories.css']
+  styleUrls  : ['./categories.css']
 })
 export class CategoriesComponent implements OnInit {
-  categories     : any[] = [];
+  categories     : any[]         = [];
   isLoading      = true;
   showForm       = false;
+  showDetail     : any           = null;
   isEditing      = false;
   editingId      : number | null = null;
   errorMessage   = '';
@@ -24,10 +25,10 @@ export class CategoriesComponent implements OnInit {
   categorieForm  : FormGroup;
 
   emojis = [
-    '🥫', '🥤', '🧴', '💊', '🔧', '👕', '👟', '🍎',
-    '🥩', '🧁', '🍺', '🧹', '📱', '💻', '🖨️', '📚',
-    '🎮', '🚗', '🏠', '🌿', '💄', '🧸', '⚽', '🎵',
-    '🔑', '💡', '🧲', '🪑', '🛁', '🍳', '🧺', '🌸'
+    '🥫','🥤','🧴','💊','🔧','👕','👟','🍎',
+    '🥩','🧁','🍺','🧹','📱','💻','🖨️','📚',
+    '🎮','🚗','🏠','🌿','💄','🧸','⚽','🎵',
+    '🔑','💡','🧲','🪑','🛁','🍳','🧺','🌸'
   ];
 
   constructor(
@@ -61,6 +62,7 @@ export class CategoriesComponent implements OnInit {
 
   openForm(categorie?: any) {
     this.showForm     = true;
+    this.showDetail   = null;
     this.errorMessage = '';
     if (categorie) {
       this.isEditing = true;
@@ -76,6 +78,15 @@ export class CategoriesComponent implements OnInit {
   closeForm() {
     this.showForm = false;
     this.categorieForm.reset({ icone: '🏷️' });
+  }
+
+  voirDetail(categorie: any) {
+    this.showDetail = categorie;
+    this.showForm   = false;
+  }
+
+  fermerDetail() {
+    this.showDetail = null;
   }
 
   saveCategorie() {

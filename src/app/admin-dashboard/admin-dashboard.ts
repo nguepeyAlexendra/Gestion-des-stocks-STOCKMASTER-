@@ -2,100 +2,70 @@ import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angula
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
-import { DarkModeService } from '../shared/dark-mode';
-import { SidebarComponent } from '../shared/sidebar/sidebar';
 
 Chart.register(...registerables);
 
-interface StatsDashboard {
-  chiffre_affaires  : number;
-  total_ventes      : number;
-  produits_en_stock : number;
-  benefices         : number;
-}
-
-interface VenteRecente {
-  id            : number;
-  client_nom    : string;
-  montant_total : number;
-  statut        : string;
-  date_vente    : string;
-}
-
-interface AlerteStock {
-  id             : number;
-  nom            : string;
-  quantite_stock : number;
-  seuil_alerte   : number;
-  pourcentage    : number;
-}
-
 @Component({
-  selector    : 'app-dashboard',
+  selector    : 'app-admin-dashboard',
   standalone  : true,
-   imports     : [CommonModule, SidebarComponent],
-  templateUrl : './dashboard.html',
-  styleUrls   : ['./dashboard.css']
+  imports     : [CommonModule, FormsModule],
+  templateUrl : './admin-dashboard.html',
+  styleUrls   : ['./admin-dashboard.css']
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class AdminDashboard implements OnInit, AfterViewInit {
 
   @ViewChild('caChart')  caChartRef!  : ElementRef;
   @ViewChild('catChart') catChartRef! : ElementRef;
 
-  userName      = '';
-  userEmail     = '';
-  userInitials  = '';
-  currentDate   = '';
-  isDark        = false;
-  isLoading     = true;
+  userName     = '';
+  userEmail    = '';
+  userInitials = '';
+  currentDate  = '';
+  isDark       = false;
+  isLoading    = true;
   nombreAlertes = 0;
-  searchTerm    = '';
+  searchTerm   = '';
 
-  stats: StatsDashboard = {
+  // Gestion utilisateurs
+  showCreateUser   = false;
+  newUser          = { username: '', email: '', role: 'utilisateur' };
+  createUserError  = '';
+  createUserSuccess = '';
+  utilisateurs     : any[] = [];
+
+  stats = {
     chiffre_affaires  : 0,
     total_ventes      : 0,
     produits_en_stock : 0,
     benefices         : 0,
+    total_utilisateurs: 0,
   };
 
-  dernieresVentes : VenteRecente[] = [];
-  alertesStock    : AlerteStock[]  = [];
-  categories      : any[]          = [];
-  ventes          : any[]          = [];
+  dernieresVentes : any[] = [];
+  alertesStock    : any[] = [];
+  categories      : any[] = [];
+  ventes          : any[] = [];
 
   private caChart  : Chart | null = null;
   private catChart : Chart | null = null;
   private apiUrl = 'http://127.0.0.1:8000/api';
 
-
-  constructor(
-    private router          : Router,
-    private http            : HttpClient,
-    private darkModeService : DarkModeService,
-  ) {}
+  constructor(private router: Router, private http: HttpClient) {}
 
   ngOnInit(): void {
     this.setDate();
     this.loadUserInfo();
-    this.isDark = this.darkModeService.getDarkMode();
+    this.restoreDarkMode();
     this.loadStats();
     this.loadDernieresVentes();
     this.loadAlertesStock();
     this.loadCategories();
+    this.loadUtilisateurs();
   }
 
-  ngAfterViewInit(): void {
-  setTimeout(() => {
-    this.initCaChart();
-    this.initCatChart();
-  }, 1000);
-}
-
-  toggleDark(): void {
-    this.darkModeService.toggleDark();
-    this.isDark = this.darkModeService.getDarkMode();
-  }
+  ngAfterViewInit(): void {}
 
   setDate(): void {
     const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
@@ -106,26 +76,22 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   }
 
   loadUserInfo(): void {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        const payload     = JSON.parse(atob(token.split('.')[1]));
-        this.userName     = payload.username || 'Utilisateur';
-        this.userEmail    = payload.email    || '';
-        this.userInitials = this.userName.substring(0, 2).toUpperCase();
-      } catch {
-        this.userName     = 'Utilisateur';
-        this.userInitials = 'US';
-      }
-    }
     this.http.get<any>(`${this.apiUrl}/auth/profile/`).subscribe({
       next: (data) => {
-        this.userName     = data.username || this.userName;
-        this.userEmail    = data.email    || this.userEmail;
+        this.userName     = data.username || 'Admin';
+        this.userEmail    = data.email    || '';
         this.userInitials = this.userName.substring(0, 2).toUpperCase();
-      },
-      error: () => {}
+      }
     });
+  }
+
+  restoreDarkMode(): void {
+    this.isDark = localStorage.getItem('stockmaster_dark') === '1';
+  }
+
+  toggleDark(): void {
+    this.isDark = !this.isDark;
+    localStorage.setItem('stockmaster_dark', this.isDark ? '1' : '0');
   }
 
   loadStats(): void {
@@ -142,93 +108,121 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       }
     });
   }
-derniersProduitsVendus : any[] = [];  // ← supprime cette ligne
 
-loadDernieresVentes(): void {
-  this.http.get<any>(`${this.apiUrl}/ventes/`).subscribe({
-    next: (data) => {
-      const liste = data.results || data;
-      this.ventes = liste;
-      this.dernieresVentes = liste.slice(0, 5).map((v: any) => ({
-        id            : v.id,
-        client_nom    : v.client_nom || 'Client anonyme',
-        montant_total : v.montant_total,
-        statut        : v.statut,
-        date_vente    : v.date_vente,
-      }));
-      this.isLoading = false;
-    },
-    error: () => { this.isLoading = false; }
-  });
-}
+  loadDernieresVentes(): void {
+    this.http.get<any>(`${this.apiUrl}/ventes/`).subscribe({
+      next: (data) => {
+        const liste = data.results || data;
+        this.ventes = liste;
+        this.dernieresVentes = liste.slice(0, 5).map((v: any) => ({
+          id         : v.id,
+          client_nom : v.client_nom || 'Client anonyme',
+          montant_total: v.montant_total,
+          statut     : v.statut,
+          date_vente : v.date_vente,
+          vendeur    : v.vendeur || '—',
+        }));
+        this.isLoading = false;
+        setTimeout(() => this.initCharts(), 300);
+      },
+      error: () => { this.isLoading = false; }
+    });
+  }
 
   loadAlertesStock(): void {
     this.http.get<any>(`${this.apiUrl}/produits/stock_faible/`).subscribe({
       next: (data) => {
         const liste = data.results || data;
         this.alertesStock = liste.map((p: any) => ({
-          id             : p.id,
-          nom            : p.nom,
-          quantite_stock : p.quantite_stock,
-          seuil_alerte   : p.seuil_alerte,
-          pourcentage    : Math.round((p.quantite_stock / (p.seuil_alerte * 2)) * 100),
+          id            : p.id,
+          nom           : p.nom,
+          quantite_stock: p.quantite_stock,
+          seuil_alerte  : p.seuil_alerte,
+          pourcentage   : Math.round((p.quantite_stock / (p.seuil_alerte * 2)) * 100),
         }));
         this.nombreAlertes = this.alertesStock.length;
       }
     });
   }
 
- loadCategories(): void {
-  this.http.get<any>(`${this.apiUrl}/categories/`).subscribe({
-    next: (data) => {
-      this.categories = data.results || data;
-    }
-  });
-}
+  loadCategories(): void {
+    this.http.get<any>(`${this.apiUrl}/categories/`).subscribe({
+      next: (data) => {
+        this.categories = data.results || data;
+        setTimeout(() => this.initCatChart(), 500);
+      }
+    });
+  }
+
+  loadUtilisateurs(): void {
+    this.http.get<any>(`${this.apiUrl}/auth/users/`).subscribe({
+      next: (data) => {
+        this.utilisateurs = data;
+        this.stats.total_utilisateurs = data.length;
+      }
+    });
+  }
+
+  creerUtilisateur(): void {
+    this.createUserError   = '';
+    this.createUserSuccess = '';
+    this.http.post<any>(`${this.apiUrl}/auth/users/`, this.newUser).subscribe({
+      next: (data) => {
+        this.createUserSuccess = `Utilisateur ${data.user.username} créé ! Email envoyé.`;
+        this.newUser = { username: '', email: '', role: 'utilisateur' };
+        this.loadUtilisateurs();
+        setTimeout(() => { this.createUserSuccess = ''; this.showCreateUser = false; }, 3000);
+      },
+      error: (err) => {
+        this.createUserError = err.error?.username?.[0] || err.error?.email?.[0] || 'Erreur lors de la création.';
+      }
+    });
+  }
+
+  supprimerUtilisateur(id: number, username: string): void {
+    if (!confirm(`Supprimer l'utilisateur ${username} ?`)) return;
+    this.http.delete(`${this.apiUrl}/auth/users/${id}/`).subscribe({
+      next: () => this.loadUtilisateurs()
+    });
+  }
+
   initCharts(): void { this.initCaChart(); }
 
   initCaChart(): void {
     if (!this.caChartRef) return;
     if (this.caChart) { this.caChart.destroy(); }
-
     const now    = new Date();
     const labels : string[] = [];
     const jours  = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(now.getDate() - i);
+      const d = new Date(now); d.setDate(now.getDate() - i);
       labels.push(jours[d.getDay()]);
     }
-
     const data = labels.map((_, idx) => {
-      const d = new Date(now);
-      d.setDate(now.getDate() - (6 - idx));
+      const d = new Date(now); d.setDate(now.getDate() - (6 - idx));
       const dateStr = d.toISOString().split('T')[0];
       return this.ventes
         .filter((v: any) => v.date_vente && v.date_vente.startsWith(dateStr))
         .reduce((sum: number, v: any) => sum + parseFloat(v.montant_total), 0);
     });
-
     this.caChart = new Chart(this.caChartRef.nativeElement, {
       type: 'line',
       data: {
         labels,
         datasets: [{
-          label               : 'Chiffre d\'affaires',
+          label: 'Chiffre d\'affaires',
           data,
-          borderColor         : '#7c5cbf',
-          backgroundColor     : 'rgba(124,92,191,0.1)',
-          borderWidth         : 2.5,
+          borderColor    : '#7c5cbf',
+          backgroundColor: 'rgba(124,92,191,0.1)',
+          borderWidth    : 2.5,
           pointBackgroundColor: '#7c5cbf',
-          pointRadius         : 4,
-          tension             : 0.4,
-          fill                : true,
+          pointRadius    : 4,
+          tension        : 0.4,
+          fill           : true,
         }]
       },
       options: {
-        responsive         : true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
           x: { grid: { display: false }, ticks: { color: '#8b83b6', font: { size: 11 } } },
@@ -241,10 +235,8 @@ loadDernieresVentes(): void {
   initCatChart(): void {
     if (!this.catChartRef) return;
     if (this.catChart) { this.catChart.destroy(); }
-
-    const labels = this.categories.length > 0 ? this.categories.map((c: any) => c.nom) : ['Alimentation', 'Hygiène', 'Boissons', 'Autres'];
-    const data   = this.categories.length > 0 ? this.categories.map((c: any) => c.nombre_produits || 1) : [42, 28, 18, 12];
-
+    const labels = this.categories.length > 0 ? this.categories.map((c: any) => c.nom) : ['Aucune'];
+    const data   = this.categories.length > 0 ? this.categories.map((c: any) => c.nombre_produits || 1) : [1];
     this.catChart = new Chart(this.catChartRef.nativeElement, {
       type: 'doughnut',
       data: {
@@ -252,9 +244,7 @@ loadDernieresVentes(): void {
         datasets: [{ data, backgroundColor: ['#4c35a0','#7c5cbf','#a78bfa','#c4b5fd','#ddd6fe'], borderWidth: 0, hoverOffset: 4 }]
       },
       options: {
-        responsive         : true,
-        maintainAspectRatio: false,
-        cutout             : '65%',
+        responsive: true, maintainAspectRatio: false, cutout: '65%',
         plugins: { legend: { position: 'bottom', labels: { color: '#8b83b6', font: { size: 11 }, padding: 12, boxWidth: 10 } } }
       }
     });
@@ -262,7 +252,7 @@ loadDernieresVentes(): void {
 
   onSearch(event: any): void { this.searchTerm = event.target.value.toLowerCase(); }
 
-  get ventesFiltrees(): VenteRecente[] {
+  get ventesFiltrees(): any[] {
     if (!this.searchTerm) return this.dernieresVentes;
     return this.dernieresVentes.filter(v => v.client_nom.toLowerCase().includes(this.searchTerm));
   }
@@ -317,7 +307,6 @@ loadDernieresVentes(): void {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('stockmaster_dark');
-      localStorage.removeItem('user_role');
       this.router.navigate(['/auth/login']);
     }
   }

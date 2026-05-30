@@ -1,23 +1,22 @@
 /* ══════════════════════════════════════════════════
    STOCKMASTER — DASHBOARD CSS
 ══════════════════════════════════════════════════ */
-
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; margin: 0; }
+body { font-family: 'Outfit', sans-serif; margin: 0; }
 
 /* ── VARIABLES LIGHT MODE ── */
 :root {
-  --bg-main:      #f0eeff;
+  --bg-main:      #f5f3ff;  /* ← change #f0eeff en #f5f3ff */
   --bg-topbar:    #ffffff;
   --bg-card:      #ffffff;
   --border-card:  #e5e3f5;
   --text-main:    #2d1f6e;
   --text-sub:     #8b83b6;
-  --search-bg:    #f0eeff;
-  --avatar-bg:    #f0eeff;
+  --search-bg:    #f5f3ff;  /* ← change aussi ici */
+  --avatar-bg:    #f5f3ff;  /* ← et ici */
   --avatar-color: #7c5cbf;
-  --progress-bg:  #f0eeff;
+  --progress-bg:  #f5f3ff;  /* ← et ici */
   --vente-amount: #4c35a0;
 }
 
@@ -43,7 +42,6 @@ body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; margin: 0;
   min-height: 600px;
   background: var(--bg-main);
   transition: background 0.3s, color 0.3s;
-  font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* ══════════════════════════════════════════════════
@@ -129,15 +127,8 @@ body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; margin: 0;
 /* ══════════════════════════════════════════════════
    MAIN
 ══════════════════════════════════════════════════ */
-.main {
-  flex: 1;
-  margin-left: 205px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--bg-main);
-  transition: background 0.3s;
-}
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
 /* ── TOPBAR ── */
 .topbar {
   background: var(--bg-topbar);
@@ -398,4 +389,123 @@ body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; margin: 0;
   .sidebar   { display: none; }
   .mid-grid  { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(2,1fr); }
+}
+
+/* ══ STATS GRID 5 COLONNES POUR ADMIN ══ */
+.stats-grid { grid-template-columns: repeat(5, 1fr); }
+
+.stat-card.blue { background: linear-gradient(135deg, #1a4a6b, #2d7eb8); }
+
+.user-role { color: rgba(255,255,255,0.5); font-size: 10px; }
+
+/* ══ GESTION UTILISATEURS ══ */
+.create-user-form { margin-bottom: 1.5rem; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+
+.form-group label {
+  font-size: 12px;
+  color: var(--text-sub);
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-card);
+  background: var(--search-bg);
+  color: var(--text-main);
+  font-size: 13px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus { border-color: #7c5cbf; }
+
+.form-btn-group { justify-content: flex-end; }
+
+.btn-create {
+  background: #7c5cbf;
+  color: white;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.btn-create:hover { background: #4c35a0; }
+
+.success-msg { font-size: 13px; color: #2d9e6e; margin-top: 8px; }
+.error-msg   { font-size: 13px; color: #e24b4a; margin-top: 8px; }
+
+/* ══ TABLE UTILISATEURS ══ */
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.users-table th {
+  text-align: left;
+  padding: 8px 12px;
+  color: var(--text-sub);
+  font-weight: 500;
+  border-bottom: 1.5px solid var(--border-card);
+}
+
+.users-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-card);
+  color: var(--text-main);
+}
+
+.users-table tr:last-child td { border-bottom: none; }
+
+.u-info { display: flex; align-items: center; gap: 8px; }
+
+.u-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #7c5cbf;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 10px; font-weight: 600; flex-shrink: 0;
+}
+
+.role-badge {
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+}
+.role-admin { background: #ede9fe; color: #4c35a0; }
+.role-user  { background: #e1f5ee; color: #0F6E56; }
+
+.btn-del-user {
+  background: #fce8e8; border: none;
+  color: #e24b4a; padding: 4px 10px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 13px; transition: background 0.2s;
+}
+.btn-del-user:hover { background: #e24b4a; color: white; }
+
+.vendeur-tag { color: #7c5cbf; font-weight: 500; }
+
+/* ══ RESPONSIVE ══ */
+@media (max-width: 1200px) {
+  .stats-grid  { grid-template-columns: repeat(3, 1fr); }
+  .form-row    { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-row   { grid-template-columns: 1fr; }
 }

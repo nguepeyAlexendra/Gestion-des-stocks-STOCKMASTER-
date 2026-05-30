@@ -4,19 +4,21 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SidebarComponent } from '../shared/sidebar/sidebar';
+import { DarkModeService } from '../shared/dark-mode';
 
 @Component({
-  selector: 'app-produits',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SidebarComponent],
+  selector   : 'app-produits',
+  standalone : true,
+  imports    : [CommonModule, ReactiveFormsModule, SidebarComponent],
   templateUrl: './produits.html',
-  styleUrls: ['./produits.css']
+  styleUrls  : ['./produits.css']
 })
 export class ProduitsComponent implements OnInit {
-  produits       : any[] = [];
-  categories     : any[] = [];
+  produits       : any[]         = [];
+  categories     : any[]         = [];
   isLoading      = true;
   showModal      = false;
+  showDetail     : any           = null;
   isEditing      = false;
   searchTerm     = '';
   selectedCat    = '';
@@ -25,13 +27,17 @@ export class ProduitsComponent implements OnInit {
   produitForm    : FormGroup;
   editingId      : number | null = null;
   imagePreview   : string | null = null;
-  imageFile      : File | null   = null;
-  apiUrl         = 'http://127.0.0.1:8000/api';
+  imageFile      : File   | null = null;
+  showDeleteModal = false;
+  produitToDelete : any          = null;
+  isDark          = false;
+  apiUrl          = 'http://127.0.0.1:8000/api';
 
   constructor(
-    private http   : HttpClient,
-    private fb     : FormBuilder,
-    private router : Router
+    private http            : HttpClient,
+    private fb              : FormBuilder,
+    private router          : Router,
+    private darkModeService : DarkModeService
   ) {
     this.produitForm = this.fb.group({
       nom            : ['', [Validators.required]],
@@ -43,19 +49,24 @@ export class ProduitsComponent implements OnInit {
       categorie      : [''],
     });
   }
+  isAdmin = false;
 
   ngOnInit() {
+    this.isDark = this.darkModeService.getDarkMode();
+    this.isAdmin = localStorage.getItem('user_role') === 'admin';
     this.loadProduits();
     this.loadCategories();
+  }
+
+  toggleDark(): void {
+    this.darkModeService.toggleDark();
+    this.isDark = this.darkModeService.getDarkMode();
   }
 
   loadProduits() {
     this.isLoading = true;
     this.http.get<any>(`${this.apiUrl}/produits/`).subscribe({
-      next : (data) => {
-        this.produits  = data.results || data;
-        this.isLoading = false;
-      },
+      next : (data) => { this.produits = data.results || data; this.isLoading = false; },
       error: () => this.isLoading = false
     });
   }
@@ -76,6 +87,7 @@ export class ProduitsComponent implements OnInit {
 
   openModal(produit?: any) {
     this.showModal    = true;
+    this.showDetail   = null;
     this.errorMessage = '';
     this.imagePreview = null;
     if (produit) {
@@ -95,6 +107,13 @@ export class ProduitsComponent implements OnInit {
     this.imagePreview = null;
     this.produitForm.reset({ seuil_alerte: 5 });
   }
+
+  voirDetail(produit: any) {
+    this.showDetail = produit;
+    this.showModal  = false;
+  }
+
+  fermerDetail() { this.showDetail = null; }
 
   onImageChange(event: any) {
     const file = event.target.files[0];
@@ -139,23 +158,37 @@ export class ProduitsComponent implements OnInit {
     }
   }
 
-  deleteProduit(id: number) {
-    if (!confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
-    this.http.delete(`${this.apiUrl}/produits/${id}/`).subscribe({
+  deleteProduit(produit: any) {
+    this.produitToDelete = produit;
+    this.showDeleteModal = true;
+  }
+
+  cancelDelete() {
+    this.showDeleteModal = false;
+    this.produitToDelete = null;
+  }
+
+  confirmDelete() {
+    if (!this.produitToDelete) return;
+    this.http.delete(`${this.apiUrl}/produits/${this.produitToDelete.id}/`).subscribe({
       next: () => {
-        this.successMessage = 'Produit supprimé avec succès !';
+        this.successMessage  = 'Produit supprimé avec succès !';
+        this.showDeleteModal = false;
+        this.produitToDelete = null;
         this.loadProduits();
         setTimeout(() => this.successMessage = '', 3000);
       }
     });
   }
 
-  onSearch(event: any) { this.searchTerm = event.target.value; }
-  onFilterCat(event: any) { this.selectedCat = event.target.value; }
+  onSearch(event: any)     { this.searchTerm  = event.target.value; }
+  onFilterCat(event: any)  { this.selectedCat = event.target.value; }
   navigateTo(page: string) { this.router.navigate([`/${page}`]); }
+
   logout() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_role');
     this.router.navigate(['/auth/login']);
   }
 }

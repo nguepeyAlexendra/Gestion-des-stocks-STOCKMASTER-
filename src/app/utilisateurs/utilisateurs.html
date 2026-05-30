@@ -1,0 +1,115 @@
+<div class="wrap">
+
+  <app-sidebar activePage="utilisateurs"></app-sidebar>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">Gestion des Utilisateurs</h1>
+        <p class="page-sub">{{ utilisateurs.length }} utilisateur(s) enregistré(s)</p>
+      </div>
+      <button class="btn-primary" (click)="showForm = !showForm">
+        + Nouvel utilisateur
+      </button>
+    </header>
+
+    <div class="content">
+
+      <!-- SUCCESS -->
+      <div class="toast-success" *ngIf="successMessage">
+        ✅ {{ successMessage }}
+      </div>
+
+      <!-- FORMULAIRE -->
+      <div class="form-card" *ngIf="showForm">
+        <div class="form-header">
+          <h2>Créer un utilisateur</h2>
+          <p>Un email avec les identifiants sera envoyé automatiquement</p>
+        </div>
+
+        <div class="error-box" *ngIf="errorMessage">
+          ⚠ {{ errorMessage }}
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nom d'utilisateur *</label>
+            <input type="text" [(ngModel)]="newUser.username" placeholder="Ex: vendeur1" />
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" [(ngModel)]="newUser.email" placeholder="vendeur@gmail.com" />
+          </div>
+          <div class="form-group">
+            <label>Rôle *</label>
+            <select [(ngModel)]="newUser.role">
+              <option value="utilisateur">Utilisateur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-submit" (click)="creerUtilisateur()" [disabled]="isCreating">
+  {{ isCreating ? 'Création en cours...' : 'Créer l\'utilisateur' }}
+</button>
+          <button class="btn-cancel" (click)="annuler()">Annuler</button>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement des utilisateurs...</p>
+      </div>
+
+      <!-- LISTE -->
+      <div *ngIf="!isLoading">
+
+        <div class="empty" *ngIf="utilisateurs.length === 0">
+          <div class="empty-icon">👥</div>
+          <h3>Aucun utilisateur trouvé</h3>
+          <p>Commencez par créer votre premier utilisateur</p>
+          <button class="btn-primary" (click)="showForm = true">+ Nouvel utilisateur</button>
+        </div>
+
+        <div class="table-wrap" *ngIf="utilisateurs.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let u of utilisateurs">
+                <td>
+                  <div class="u-info">
+                    <div class="u-avatar">{{ u.username.substring(0,2).toUpperCase() }}</div>
+                    <span class="u-name">{{ u.username }}</span>
+                  </div>
+                </td>
+                <td class="u-email">{{ u.email }}</td>
+                <td>
+                  <span class="role-badge" [ngClass]="u.is_admin ? 'role-admin' : 'role-user'">
+                    {{ u.is_admin ? '👑 Admin' : '👤 Utilisateur' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn-del" (click)="supprimerUtilisateur(u.id, u.username)">
+                    🗑 Supprimer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+</div>

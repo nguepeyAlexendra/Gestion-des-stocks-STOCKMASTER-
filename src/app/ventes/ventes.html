@@ -1,4 +1,4 @@
-<div class="wrap">
+<div class="wrap" [class.dark-mode]="isDark">
 
   <app-sidebar activePage="ventes"></app-sidebar>
 
@@ -9,9 +9,12 @@
         <h1 class="page-title">Gestion des Ventes</h1>
         <p class="page-sub">{{ ventes.length }} vente(s) enregistrée(s)</p>
       </div>
-      <button class="btn-primary" (click)="ouvrirFormVente()">
+      <button class="btn-primary" (click)="ouvrirFormVente()" *ngIf="!isAdmin">
         <i class="ti ti-plus"></i> Nouvelle vente
       </button>
+      <div class="dark-btn" (click)="toggleDark()">
+    {{ isDark ? '☀️' : '🌙' }}
+  </div>
     </header>
 
     <div class="content">
@@ -21,7 +24,7 @@
       </div>
 
       <!-- FORMULAIRE NOUVELLE VENTE -->
-      <div class="vente-form" *ngIf="showForm">
+      <div class="vente-form" *ngIf="showForm && !isAdmin">
         <div class="form-header">
           <h2>🛒 Nouvelle vente</h2>
           <p>Ajoutez des produits au panier et enregistrez la vente</p>
@@ -162,7 +165,7 @@
           <div class="empty-icon">🛒</div>
           <h3>Aucune vente enregistrée</h3>
           <p>Commencez par enregistrer votre première vente</p>
-          <button class="btn-primary" (click)="ouvrirFormVente()">
+          <button class="btn-primary" (click)="ouvrirFormVente()" *ngIf="!isAdmin">
             <i class="ti ti-plus"></i> Nouvelle vente
           </button>
         </div>
@@ -171,8 +174,8 @@
           <table>
             <thead>
               <tr>
-                <th>#</th>
                 <th>Client</th>
+                <th *ngIf="isAdmin">Vendeur</th>
                 <th>Montant total</th>
                 <th>Montant reçu</th>
                 <th>Monnaie</th>
@@ -182,8 +185,10 @@
             </thead>
             <tbody>
               <tr *ngFor="let v of ventesFiltres">
-                <td><span class="vente-id">#{{ v.id }}</span></td>
                 <td>{{ v.client_nom || 'Client anonyme' }}</td>
+                <td *ngIf="isAdmin">
+                  <span class="vendeur-tag">{{ v.vendeur || '—' }}</span>
+                </td>
                 <td class="td-price">{{ v.montant_total | number }} F</td>
                 <td class="td-price">{{ v.montant_recu | number }} F</td>
                 <td class="td-price">{{ v.monnaie_rendu | number }} F</td>

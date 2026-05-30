@@ -1,0 +1,120 @@
+<div class="landing">
+
+  <!-- ══ HERO ══ -->
+  <section class="hero">
+    <div class="hero-circles">
+      <div class="hc hc-1"></div>
+      <div class="hc hc-2"></div>
+      <div class="hc hc-3"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="nav">
+      <div class="nav-logo">
+        <div class="nav-logo-icon">S</div>
+        <span class="nav-logo-text">StockMaster</span>
+      </div>
+      <div class="nav-links">
+        <span (click)="scrollTo('features')">Fonctionnalités</span>
+        <span (click)="scrollTo('why')">Avantages</span>
+        <button class="btn-nav" (click)="goToLogin()">Se connecter →</button>
+      </div>
+    </nav>
+
+    <!-- Hero Content -->
+    <div class="hero-content">
+      <div class="hero-badge">✨ Solution de gestion commerciale</div>
+      <h1>Gérez votre commerce<br>avec <span class="hero-highlight">intelligence</span></h1>
+      <p>StockMaster simplifie la gestion de vos stocks, ventes et factures. Une solution complète pensée pour les commerçants camerounais.</p>
+
+      <div class="hero-btns">
+        <button class="btn-primary-hero" (click)="goToLogin()">
+          🚀 Commencer maintenant
+        </button>
+        <button class="btn-secondary-hero" (click)="scrollTo('features')">
+          Découvrir →
+        </button>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="stat-num">100%</span>
+          <span class="stat-lbl">Camerounais</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="hero-stat">
+          <span class="stat-num">0 F</span>
+          <span class="stat-lbl">Erreurs de calcul</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="hero-stat">
+          <span class="stat-num">24/7</span>
+          <span class="stat-lbl">Disponible</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FONCTIONNALITÉS ══ -->
+  <section class="features" id="features">
+    <div class="section-header">
+      <div class="section-badge">Fonctionnalités</div>
+      <h2>Tout ce dont vous avez besoin</h2>
+      <p>Des outils puissants pour gérer votre activité commerciale au quotidien</p>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-card" *ngFor="let f of fonctionnalites">
+        <div class="feat-icon" [style.background]="f.bg">{{ f.icon }}</div>
+        <h3>{{ f.titre }}</h3>
+        <p>{{ f.desc }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ AVANTAGES ══ -->
+  <section class="why" id="why">
+    <div class="section-header">
+      <div class="section-badge">Avantages</div>
+      <h2>Pourquoi choisir StockMaster ?</h2>
+      <p>Une solution pensée pour simplifier votre quotidien</p>
+    </div>
+
+    <div class="why-grid">
+      <div class="why-card" *ngFor="let a of avantages">
+        <div class="why-num">{{ a.num }}</div>
+        <h3>{{ a.titre }}</h3>
+        <p>{{ a.desc }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA ══ -->
+  <section class="cta">
+    <div class="cta-content">
+      <h2>Prêt à transformer votre commerce ?</h2>
+      <p>Rejoignez les commerçants qui font confiance à StockMaster pour gérer leur activité</p>
+      <div class="cta-btns">
+  <button class="btn-cta-primary" (click)="goToLogin()">
+    Se connecter maintenant
+  </button>
+</div>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="footer">
+    <div class="footer-left">
+      <div class="footer-logo">
+        <div class="footer-logo-icon">S</div>
+        <span>StockMaster</span>
+      </div>
+      <p>Solution de gestion commerciale</p>
+    </div>
+    <div class="footer-right">
+      <p>© 2026 StockMaster — Tous droits réservés</p>
+      <p>Développé par Ngueyep Njomo Emmanuelle Alexandra</p>
+    </div>
+  </footer>
+
+</div>

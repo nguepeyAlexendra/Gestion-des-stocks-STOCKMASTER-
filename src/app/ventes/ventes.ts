@@ -4,55 +4,60 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SidebarComponent } from '../shared/sidebar/sidebar';
+import { DarkModeService } from '../shared/dark-mode';
 
 @Component({
-  selector: 'app-ventes',
+  selector  : 'app-ventes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SidebarComponent],
+  imports   : [CommonModule, ReactiveFormsModule, SidebarComponent],
   templateUrl: './ventes.html',
-  styleUrls: ['./ventes.css']
+  styleUrls  : ['./ventes.css']
 })
 export class VentesComponent implements OnInit {
-  ventes         : any[] = [];
-  produits       : any[] = [];
-  clients        : any[] = [];
-  panier         : any[] = [];
+  ventes         : any[]    = [];
+  produits       : any[]    = [];
+  clients        : any[]    = [];
+  panier         : any[]    = [];
   isLoading      = true;
   showForm       = false;
   errorMessage   = '';
   successMessage = '';
   searchTerm     = '';
+  isAdmin        = false;
+  isDark         = false;
   apiUrl         = 'http://127.0.0.1:8000/api';
   venteForm      : FormGroup;
 
-  produitSelectionne : any = null;
-  quantiteSelectionnee = 1;
-
   constructor(
-    private http   : HttpClient,
-    private fb     : FormBuilder,
-    private router : Router
+    private http            : HttpClient,
+    private fb              : FormBuilder,
+    private router          : Router,
+    private darkModeService : DarkModeService
   ) {
     this.venteForm = this.fb.group({
-      client        : [''],
-      montant_recu  : ['', [Validators.required, Validators.min(0)]],
-      statut        : ['payee']
+      client       : [''],
+      montant_recu : ['', [Validators.required, Validators.min(0)]],
+      statut       : ['payee']
     });
   }
 
   ngOnInit() {
+    this.isDark  = this.darkModeService.getDarkMode();
+    this.isAdmin = localStorage.getItem('user_role') === 'admin';
     this.loadVentes();
     this.loadProduits();
     this.loadClients();
   }
 
+  toggleDark(): void {
+    this.darkModeService.toggleDark();
+    this.isDark = this.darkModeService.getDarkMode();
+  }
+
   loadVentes() {
     this.isLoading = true;
     this.http.get<any>(`${this.apiUrl}/ventes/`).subscribe({
-      next : (data) => {
-        this.ventes    = data.results || data;
-        this.isLoading = false;
-      },
+      next : (data) => { this.ventes = data.results || data; this.isLoading = false; },
       error: () => this.isLoading = false
     });
   }
@@ -88,14 +93,13 @@ export class VentesComponent implements OnInit {
   ajouterAuPanier(produit: any) {
     const existe = this.panier.find(p => p.produit === produit.id);
     if (existe) {
-      if (existe.quantite < produit.quantite_stock) {
-        existe.quantite++;
-      }
+      if (existe.quantite < produit.quantite_stock) existe.quantite++;
     } else {
       this.panier.push({
         produit       : produit.id,
         produit_nom   : produit.nom,
         prix_unitaire : parseFloat(produit.prix_vente),
+        prix_min      : parseFloat(produit.prix_vente),
         quantite      : 1,
         stock_max     : produit.quantite_stock
       });
@@ -116,8 +120,8 @@ export class VentesComponent implements OnInit {
   }
 
   ouvrirFormVente() {
-    this.showForm    = true;
-    this.panier      = [];
+    this.showForm     = true;
+    this.panier       = [];
     this.errorMessage = '';
     this.venteForm.reset({ statut: 'payee' });
   }
@@ -138,6 +142,18 @@ export class VentesComponent implements OnInit {
       return;
     }
 
+    // Vérification prix minimum
+    const produitSousPrix = this.panier.find(item => item.prix_unitaire < item.prix_min);
+    if (produitSousPrix) {
+      this.errorMessage = `Le prix de "${produitSousPrix.produit_nom}" (${produitSousPrix.prix_unitaire} F) ne peut pas être inférieur au prix minimum (${produitSousPrix.prix_min} F).`;
+      return;
+    }
+     // Vérification montant reçu suffisant
+const montantRecu = parseFloat(this.venteForm.get('montant_recu')?.value);
+if (montantRecu < this.montantTotal) {
+  this.errorMessage = `Montant insuffisant ! Le client doit payer au moins ${this.montantTotal} F. Montant reçu : ${montantRecu} F.`;
+  return;
+}
     const data = {
       client       : this.venteForm.get('client')?.value || null,
       montant_recu : parseFloat(this.venteForm.get('montant_recu')?.value),
@@ -158,16 +174,33 @@ export class VentesComponent implements OnInit {
         setTimeout(() => this.successMessage = '', 3000);
       },
       error: (err) => {
-        this.errorMessage = err.error?.detail || 'Erreur lors de l\'enregistrement.';
+        if (err.error?.lignes) {
+          const lignesErrors = err.error.lignes;
+          const firstError = lignesErrors.find((l: any) => l && Object.keys(l).length > 0);
+          if (firstError) {
+            const errorMsg = Object.values(firstError)[0];
+            this.errorMessage = Array.isArray(errorMsg) ? errorMsg[0] as string : errorMsg as string;
+          } else {
+            this.errorMessage = 'Erreur sur les lignes de vente.';
+          }
+        } else if (err.error?.non_field_errors) {
+          this.errorMessage = err.error.non_field_errors[0];
+        } else if (err.error?.detail) {
+          this.errorMessage = err.error.detail;
+        } else {
+          this.errorMessage = 'Erreur lors de l\'enregistrement.';
+        }
       }
     });
   }
 
-  onSearch(event: any) { this.searchTerm = event.target.value; }
+  onSearch(event: any)     { this.searchTerm = event.target.value; }
   navigateTo(page: string) { this.router.navigate([`/${page}`]); }
+
   logout() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_role');
     this.router.navigate(['/auth/login']);
   }
 }

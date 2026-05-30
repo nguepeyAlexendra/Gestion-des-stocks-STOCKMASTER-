@@ -1,58 +1,85 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 .sidebar {
-  width: 230px; flex-shrink: 0;
-  background: linear-gradient(180deg, #0f0326 0%, #1e0b4a 50%, #2d1b5e 100%);
-  display: flex; flex-direction: column;
-  padding: 2rem 0;
-  position: fixed; height: 100vh; left: 0; top: 0;
+  width: 205px;
+  background: #2d1f6e;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: fixed;
+  height: 100vh;
+  left: 0; top: 0;
   z-index: 100;
-  border-right: 1px solid rgba(167,139,250,0.1);
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .sidebar-logo {
-  display: flex; align-items: center; gap: 10px;
-  padding: 0 1.5rem 2rem;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 8px;
+  padding: 1rem 1.2rem;
+  border-bottom: 0.5px solid rgba(255,255,255,0.1);
 }
 
-.logo-icon { display: flex; gap: 4px; }
-.logo-icon span {
-  width: 9px; height: 20px;
-  background: linear-gradient(180deg, #a78bfa, #7c3aed);
-  border-radius: 3px; display: block;
+.logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: #7c5cbf;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 16px; font-weight: 700; flex-shrink: 0;
 }
-.logo-icon span:last-child { margin-top: 6px; }
-.logo-txt { font-size: 12px; font-weight: 600; color: white; letter-spacing: 2px; }
 
-.nav-section {
-  font-size: 10px; color: rgba(255,255,255,0.25);
-  padding: 0 1.5rem; margin-bottom: 8px; letter-spacing: 1px;
+.logo-text { color: white; font-size: 14px; font-weight: 500; }
+.logo-sub  { color: rgba(255,255,255,0.5); font-size: 11px; }
+
+.nav-section { padding: 0.8rem 0; flex: 1; overflow-y: auto; }
+
+.nav-label {
+  color: rgba(255,255,255,0.35); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1px;
+  padding: 0 1.2rem; margin-bottom: 6px;
 }
 
 .nav-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 0.75rem 1.5rem; cursor: pointer;
-  transition: all 0.2s; border-left: 3px solid transparent;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 1.2rem;
+  color: rgba(255,255,255,0.65); font-size: 13px;
+  cursor: pointer; transition: all 0.15s;
+  border-left: 3px solid transparent;
+  font-family: 'Inter', system-ui, sans-serif;
 }
-.nav-item:hover { background: rgba(167,139,250,0.08); }
-.nav-item i    { font-size: 18px; color: rgba(255,255,255,0.35); }
-.nav-item span { font-size: 14px; color: rgba(255,255,255,0.45); font-weight: 400; font-family: 'Outfit', sans-serif; }
-
+.nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
 .nav-item.active {
-  background: linear-gradient(90deg, rgba(124,58,237,0.3), transparent);
-  border-left: 3px solid #a78bfa;
+  background: rgba(255,255,255,0.12);
+  color: white; border-left: 3px solid #a78bfa;
 }
-.nav-item.active i    { color: #c4b5fd; }
-.nav-item.active span { color: white; font-weight: 600; }
+.nav-item.active span { color: white; font-weight: 500; }
+.nav-item .ico { font-size: 15px; width: 18px; text-align: center; }
 
-.sidebar-bottom {
-  margin-top: auto;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding-top: 1rem;
+.nav-logout {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 1.2rem;
+  color: rgba(255,100,100,0.8); font-size: 13px;
+  cursor: pointer;
+  border-top: 0.5px solid rgba(255,255,255,0.1);
+  transition: all 0.15s;
+  font-family: 'Inter', system-ui, sans-serif;
 }
-.nav-logout i    { color: rgba(248,113,113,0.6) !important; }
-.nav-logout span { color: rgba(248,113,113,0.6) !important; }
+.nav-logout:hover { background: rgba(255,80,80,0.12); color: #ff6b6b; }
+
+.sidebar-footer {
+  padding: 0.9rem 1.2rem;
+  border-top: 0.5px solid rgba(255,255,255,0.1);
+}
+
+.user-info { display: flex; align-items: center; gap: 8px; }
+
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #7c5cbf;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 11px; font-weight: 500; flex-shrink: 0;
+}
+
+.user-name  { color: white; font-size: 12px; font-weight: 500; font-family: 'Inter', sans-serif; }
+.user-email { color: rgba(255,255,255,0.45); font-size: 10px; word-break: break-all; font-family: 'Inter', sans-serif; }
+.user-role { color: rgba(255,255,255,0.45); font-size: 10px; word-break: break-all; font-family: 'Inter', sans-serif; }

@@ -1,7 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 
-// ── 1. PROTECTION GLOBALE ──
 export const authGuard: CanActivateFn = () => {
   const router = inject(Router);
   const token  = localStorage.getItem('access_token');
@@ -12,11 +11,13 @@ export const authGuard: CanActivateFn = () => {
   return false;
 };
 
-// ── 2. PROTECTION ADMINISTRATEUR ──
 export const adminGuard: CanActivateFn = () => {
   const router = inject(Router);
   const token  = localStorage.getItem('access_token');
   const role   = localStorage.getItem('user_role');
+
+  console.log('adminGuard - token:', token ? 'exists' : 'null');
+  console.log('adminGuard - role:', role);
 
   if (!token) {
     router.navigate(['/auth/login']);
@@ -29,7 +30,6 @@ export const adminGuard: CanActivateFn = () => {
   return false;
 };
 
-// ── 3. PROTECTION UTILISATEUR ──
 export const userGuard: CanActivateFn = () => {
   const router = inject(Router);
   const token  = localStorage.getItem('access_token');
@@ -41,7 +41,7 @@ export const userGuard: CanActivateFn = () => {
   }
 
   if (role === 'admin') {
-    router.navigate(['/admin-dashboard']);
+    router.navigate(['/admin-dashboard']);  // ← corrigé
     return false;
   }
 

@@ -1,0 +1,182 @@
+<div class="wrap">
+
+  <app-sidebar activePage="rapports"></app-sidebar>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">Rapports & Statistiques</h1>
+        <p class="page-sub">Vue d'ensemble de votre activité commerciale</p>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- LOADING -->
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement des rapports...</p>
+      </div>
+
+      <div *ngIf="!isLoading">
+
+        <!-- CARTES STATS VENTES -->
+        <h2 class="section-title">📊 Statistiques des ventes</h2>
+        <div class="stats-grid">
+          <div class="stat-card card-purple">
+            <div class="stat-icon"><i class="ti ti-shopping-cart"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Total ventes</p>
+              <p class="stat-value">{{ statsVentes.total_ventes }}</p>
+            </div>
+          </div>
+          <div class="stat-card card-green">
+            <div class="stat-icon"><i class="ti ti-coin"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Chiffre d'affaires</p>
+              <p class="stat-value">{{ statsVentes.chiffre_affaires | number }} F</p>
+            </div>
+          </div>
+          <div class="stat-card card-orange">
+            <div class="stat-icon"><i class="ti ti-calendar"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Ventes aujourd'hui</p>
+              <p class="stat-value">{{ statsVentes.ventes_aujourdhui }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARTES STATS PRODUITS -->
+        <h2 class="section-title">📦 Statistiques des produits</h2>
+        <div class="stats-grid">
+          <div class="stat-card card-blue">
+            <div class="stat-icon"><i class="ti ti-package"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Total produits</p>
+              <p class="stat-value">{{ statsProduits.total_produits }}</p>
+            </div>
+          </div>
+          <div class="stat-card card-red">
+            <div class="stat-icon"><i class="ti ti-alert-triangle"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Stock faible</p>
+              <p class="stat-value">{{ statsProduits.produits_stock_faible }}</p>
+            </div>
+          </div>
+          <div class="stat-card card-teal">
+            <div class="stat-icon"><i class="ti ti-building-store"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Valeur du stock</p>
+              <p class="stat-value">{{ statsProduits.valeur_stock | number }} F</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRILLE TABLEAUX -->
+        <div class="tables-grid">
+
+          <!-- DERNIERES VENTES -->
+          <div class="table-card">
+            <div class="table-card-header">
+              <h3>🛒 Dernières ventes</h3>
+              <button class="btn-link" (click)="navigateTo('ventes')">Voir tout</button>
+            </div>
+            <div class="empty-sm" *ngIf="dernieres_ventes.length === 0">
+              Aucune vente enregistrée
+            </div>
+            <table *ngIf="dernieres_ventes.length > 0">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let v of dernieres_ventes">
+                  <td>{{ v.client_nom || 'Anonyme' }}</td>
+                  <td class="td-price">{{ v.montant_total | number }} F</td>
+                  <td>
+                    <span class="tag" [ngClass]="{
+                      'tag-success' : v.statut === 'payee',
+                      'tag-warning' : v.statut === 'en_attente',
+                      'tag-danger'  : v.statut === 'annulee'
+                    }">{{ v.statut === 'payee' ? 'Payée' : v.statut === 'en_attente' ? 'Attente' : 'Annulée' }}</span>
+                  </td>
+                  <td>{{ v.date_vente | date:'dd/MM/yyyy' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- PRODUITS STOCK FAIBLE -->
+          <div class="table-card">
+            <div class="table-card-header">
+              <h3>⚠️ Produits stock faible</h3>
+              <button class="btn-link" (click)="navigateTo('produits')">Gérer</button>
+            </div>
+            <div class="empty-sm" *ngIf="produits_stock_faible.length === 0">
+              ✅ Tous les stocks sont bons !
+            </div>
+            <table *ngIf="produits_stock_faible.length > 0">
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Stock</th>
+                  <th>Seuil</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of produits_stock_faible">
+                  <td class="p-nom">{{ p.nom }}</td>
+                  <td>
+                    <span class="stock-badge" [ngClass]="{
+                      'stock-red'    : p.quantite_stock <= 2,
+                      'stock-orange' : p.quantite_stock > 2
+                    }">{{ p.quantite_stock }}</span>
+                  </td>
+                  <td class="seuil">{{ p.seuil_alerte }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- TOP CLIENTS -->
+          <div class="table-card">
+            <div class="table-card-header">
+              <h3>👥 Top clients</h3>
+              <button class="btn-link" (click)="navigateTo('clients')">Voir tout</button>
+            </div>
+            <div class="empty-sm" *ngIf="top_clients.length === 0">
+              Aucun client enregistré
+            </div>
+            <table *ngIf="top_clients.length > 0">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Achats</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of top_clients; let i = index">
+                  <td>
+                    <div class="client-info">
+                      <div class="client-rank">{{ i + 1 }}</div>
+                      <span>{{ c.nom }} {{ c.prenom }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="achats-badge">{{ c.nombre_achats }} achat(s)</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,212 @@
+<div class="wrap" [class.dark-mode]="isDark">
+
+  <app-sidebar activePage="factures"></app-sidebar>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">Factures</h1>
+        <p class="page-sub">{{ factures.length }} facture(s) générée(s)</p>
+      </div>
+      <div class="topbar-right">
+        <div class="dark-btn" (click)="toggleDark()">
+          {{ isDark ? '☀️' : '🌙' }}
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- DETAIL FACTURE -->
+      <div class="facture-wrapper" *ngIf="factureDetail">
+
+        <div class="print-actions no-print">
+          <button class="btn-print" (click)="imprimer()" *ngIf="!isAdmin">
+  <i class="ti ti-printer"></i> Imprimer
+</button>
+          <button class="btn-close" (click)="fermerDetail()">
+            <i class="ti ti-arrow-left"></i> Retour
+          </button>
+        </div>
+
+        <div class="facture-doc">
+
+          <div class="doc-header">
+            <div class="doc-logo">
+              <div class="logo-icon"><span></span><span></span></div>
+              <span class="logo-name">STOCKMASTER</span>
+            </div>
+            <div class="doc-contact">
+              <div class="contact-col">
+                <p class="contact-label">Téléphone</p>
+                <p>+237 6 75 89 06 54</p>
+              </div>
+              <div class="contact-col">
+                <p class="contact-label">Email</p>
+                <p>emmanuellenjomo07@gmail.com</p>
+              </div>
+              <div class="contact-col">
+                <p class="contact-label">Adresse</p>
+                <p>Yaoundé, Cameroun</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc-wave">
+            <svg viewBox="0 0 800 80" preserveAspectRatio="none">
+              <path d="M0,0 C200,80 600,0 800,60 L800,0 Z" fill="#2d1f6e"/>
+              <path d="M0,20 C200,90 600,10 800,70 L800,80 L0,80 Z" fill="#e5e5e5" opacity="0.5"/>
+            </svg>
+          </div>
+
+          <div class="doc-body">
+
+            <div class="doc-meta">
+              <div class="doc-client">
+                <p class="meta-label">À :</p>
+                <p class="client-name">{{ factureDetail.client_nom || 'CLIENT ANONYME' }}</p>
+                <p class="client-info" *ngIf="venteDetail?.date_vente">
+                  Date : {{ venteDetail.date_vente | date:'dd/MM/yyyy' }}
+                </p>
+              </div>
+              <div class="doc-invoice-info">
+                <h2 class="invoice-title">FACTURE</h2>
+                <table class="invoice-meta-table">
+                  <tr>
+                    <td class="meta-key">N° Facture</td>
+                    <td class="meta-sep">:</td>
+                    <td class="meta-val">{{ factureDetail.numero_facture }}</td>
+                  </tr>
+                  <tr>
+                    <td class="meta-key">Date</td>
+                    <td class="meta-sep">:</td>
+                    <td class="meta-val">{{ factureDetail.date_emission | date:'dd/MM/yyyy' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="meta-key">Statut</td>
+                    <td class="meta-sep">:</td>
+                    <td class="meta-val">
+                      <span class="tag" [ngClass]="{
+                        'tag-success' : factureDetail.statut === 'payee',
+                        'tag-warning' : factureDetail.statut === 'emise',
+                        'tag-danger'  : factureDetail.statut === 'annulee'
+                      }">{{ factureDetail.statut === 'payee' ? 'Payée' : factureDetail.statut === 'emise' ? 'Émise' : 'Annulée' }}</span>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th class="th-desc">Description du produit</th>
+                  <th>Prix unitaire</th>
+                  <th>Qté</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let ligne of factureDetail.lignes; let i = index" [class.row-alt]="i % 2 === 1">
+                  <td class="td-desc">{{ ligne.produit_nom }}</td>
+                  <td>{{ ligne.prix_unitaire | number }} FCFA</td>
+                  <td>{{ ligne.quantite }}</td>
+                  <td class="td-total">{{ ligne.sous_total | number }} FCFA</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="doc-totaux">
+              <div class="payment-info">
+                <p class="payment-title">INFORMATIONS DE PAIEMENT</p>
+                <p *ngIf="venteDetail">Montant reçu : <strong>{{ venteDetail.montant_recu | number }} FCFA</strong></p>
+                <p *ngIf="venteDetail">Monnaie rendue : <strong>{{ venteDetail.monnaie_rendu | number }} FCFA</strong></p>
+                <p>Mode : Espèces</p>
+              </div>
+              <div class="totaux-right">
+                <div class="total-ligne" *ngIf="venteDetail">
+                  <span>Sous-total</span>
+                  <span>{{ factureDetail.montant_total | number }} FCFA</span>
+                </div>
+                <div class="grand-total">
+                  <span>TOTAL GÉNÉRAL</span>
+                  <span>{{ factureDetail.montant_total | number }} FCFA</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="doc-footer">
+              <p class="merci">Merci pour votre confiance !</p>
+              <p class="terms">
+                <strong>CONDITIONS :</strong> Cette facture est générée automatiquement par StockMaster.
+                Conservez ce document pour vos archives.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTRES -->
+      <div class="filters" *ngIf="!factureDetail">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" placeholder="Rechercher une facture..." (input)="onSearch($event)" />
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement des factures...</p>
+      </div>
+
+      <!-- LISTE -->
+      <div *ngIf="!isLoading && !factureDetail">
+
+        <div class="empty" *ngIf="facturesFiltres.length === 0">
+          <div class="empty-icon">🧾</div>
+          <h3>Aucune facture</h3>
+          <p>Les factures sont générées automatiquement lors des ventes</p>
+        </div>
+
+        <div class="table-wrap" *ngIf="facturesFiltres.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Client</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of facturesFiltres">
+                <td><span class="facture-num-tag">{{ f.numero_facture }}</span></td>
+                <td>{{ f.client_nom || 'Client anonyme' }}</td>
+                <td class="td-price">{{ f.montant_total | number }} FCFA</td>
+                <td>
+                  <span class="tag" [ngClass]="{
+                    'tag-success' : f.statut === 'payee',
+                    'tag-warning' : f.statut === 'emise',
+                    'tag-danger'  : f.statut === 'annulee'
+                  }">{{ f.statut === 'payee' ? '✓ Payée' : f.statut === 'emise' ? '⏳ Émise' : '✗ Annulée' }}</span>
+                </td>
+                <td>{{ f.date_emission | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <button class="btn-voir" (click)="voirDetail(f)">
+                    <i class="ti ti-eye"></i> Voir
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>

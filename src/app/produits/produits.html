@@ -1,56 +1,58 @@
-<div class="wrap">
+<div class="app" [class.dark-mode]="isDark">
 
   <app-sidebar activePage="produits"></app-sidebar>
 
   <main class="main">
 
-    <header class="topbar">
-      <div>
-        <h1 class="page-title">Gestion des Produits</h1>
-        <p class="page-sub">{{ produits.length }} produit(s) dans votre catalogue</p>
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">Gestion des Produits</div>
+        <div class="topbar-sub">{{ produits.length }} produit(s) dans votre catalogue</div>
       </div>
-      <button class="btn-primary" (click)="openModal()">
-        <i class="ti ti-plus"></i> Ajouter un produit
-      </button>
-    </header>
+      <div class="topbar-right">
+        <button class="btn-primary" (click)="openModal()" *ngIf="isAdmin">+ Ajouter un produit</button>
+
+        <div class="dark-btn" (click)="toggleDark()">
+          {{ isDark ? '☀️' : '🌙' }}
+        </div>
+      </div>
+    </div>
 
     <div class="content">
 
+      <!-- SUCCES -->
       <div class="toast-success" *ngIf="successMessage">
-        <i class="ti ti-circle-check"></i> {{ successMessage }}
+        ✅ {{ successMessage }}
       </div>
 
-      <div class="form-section" *ngIf="showModal">
+      <!-- FORMULAIRE -->
+      <div class="card form-card" *ngIf="showModal && isAdmin">
         <div class="form-header">
           <div>
-            <h2>{{ isEditing ? '✏️ Modifier le produit' : '📦 Nouveau produit' }}</h2>
-            <p>Remplissez les informations du produit</p>
+            <div class="form-title">{{ isEditing ? 'Modifier le produit' : 'Nouveau produit' }}</div>
+            <div class="form-sub">Remplissez les informations du produit</div>
           </div>
         </div>
 
-        <div class="error-box" *ngIf="errorMessage">
-          <i class="ti ti-alert-circle"></i> {{ errorMessage }}
-        </div>
+        <div class="error-box" *ngIf="errorMessage">⚠ {{ errorMessage }}</div>
 
         <form [formGroup]="produitForm" (ngSubmit)="saveProduit()">
 
-          <div class="image-upload-zone" (click)="fileInput.click()">
+          <div class="image-upload" (click)="fileInput.click()">
             <img *ngIf="imagePreview" [src]="imagePreview" alt="aperçu" class="image-preview" />
             <div *ngIf="!imagePreview" class="image-placeholder">
-              <i class="ti ti-camera"></i>
+              <span class="upload-icon">📷</span>
               <p>Cliquez pour ajouter une photo</p>
-              <span>JPG, PNG — max 2MB</span>
+              <span class="upload-sub">JPG, PNG — max 2MB</span>
             </div>
             <input #fileInput type="file" accept="image/*" (change)="onImageChange($event)" style="display:none" />
           </div>
 
           <div class="form-grid">
             <div class="form-group">
-              <label>Nom du produit <span class="required">*</span></label>
+              <label>Nom du produit *</label>
               <input type="text" formControlName="nom" placeholder="Ex: Sucre blanc 1kg" />
-              <span class="err" *ngIf="produitForm.get('nom')?.invalid && produitForm.get('nom')?.touched">
-                Champ requis
-              </span>
             </div>
             <div class="form-group">
               <label>Catégorie</label>
@@ -63,54 +65,106 @@
 
           <div class="form-group">
             <label>Description</label>
-            <textarea formControlName="description" placeholder="Décrivez le produit..." rows="3"></textarea>
+            <textarea formControlName="description" placeholder="Décrivez le produit..." rows="2"></textarea>
           </div>
 
           <div class="form-grid">
             <div class="form-group">
-              <label>Prix d'achat (FCFA) <span class="required">*</span></label>
-              <div class="input-prefix">
-                <span>F</span>
-                <input type="number" formControlName="prix_achat" placeholder="0" />
-              </div>
+              <label>Prix d'achat (FCFA) *</label>
+              <input type="number" formControlName="prix_achat" placeholder="0" />
             </div>
             <div class="form-group">
-              <label>Prix de vente (FCFA) <span class="required">*</span></label>
-              <div class="input-prefix">
-                <span>F</span>
-                <input type="number" formControlName="prix_vente" placeholder="0" />
-              </div>
+              <label>Prix de vente (FCFA) *</label>
+              <input type="number" formControlName="prix_vente" placeholder="0" />
             </div>
           </div>
 
           <div class="form-grid">
             <div class="form-group">
-              <label>Quantité en stock <span class="required">*</span></label>
+              <label>Quantité en stock *</label>
               <input type="number" formControlName="quantite_stock" placeholder="0" />
             </div>
             <div class="form-group">
-              <label>Seuil d'alerte stock</label>
+              <label>Seuil d'alerte</label>
               <input type="number" formControlName="seuil_alerte" placeholder="5" />
             </div>
           </div>
 
           <div class="form-actions">
             <button type="submit" class="btn-submit" [disabled]="produitForm.invalid">
-              <i class="ti ti-check"></i>
-              {{ isEditing ? 'Enregistrer les modifications' : 'Ajouter le produit' }}
+              {{ isEditing ? 'Enregistrer' : 'Ajouter le produit' }}
             </button>
             <button type="button" class="btn-cancel" (click)="closeModal()">
-              <i class="ti ti-x"></i> Annuler
+              Annuler
             </button>
           </div>
 
         </form>
       </div>
 
-      <div class="filters" *ngIf="!showModal">
-        <div class="search-wrap">
-          <i class="ti ti-search"></i>
-          <input type="text" placeholder="Rechercher un produit..." (input)="onSearch($event)" />
+      <!-- DETAIL PRODUIT -->
+      <div class="card detail-card" *ngIf="showDetail">
+        <div class="detail-header">
+          <div class="detail-title">Détails du produit</div>
+          <button class="btn-fermer" (click)="fermerDetail()">✕ Fermer</button>
+        </div>
+        <div class="detail-body">
+          <div class="detail-img-wrap">
+            <img *ngIf="showDetail.image_url"
+                 [src]="showDetail.image_url"
+                 [alt]="showDetail.nom"
+                 class="detail-img" />
+            <div *ngIf="!showDetail.image_url" class="detail-avatar">
+              {{ showDetail.nom.charAt(0).toUpperCase() }}
+            </div>
+          </div>
+          <div class="detail-infos">
+            <h2 class="detail-nom">{{ showDetail.nom }}</h2>
+            <p class="detail-desc">{{ showDetail.description || 'Pas de description' }}</p>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Catégorie</span>
+                <span class="detail-val">{{ showDetail.categorie_nom || 'Sans catégorie' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Prix d'achat</span>
+                <span class="detail-val">{{ showDetail.prix_achat | number }} FCFA</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Prix de vente</span>
+                <span class="detail-val">{{ showDetail.prix_vente | number }} FCFA</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Stock disponible</span>
+                <span class="detail-val"
+                  [style.color]="showDetail.stock_faible ? '#e24b4a' : '#2d9e6e'">
+                  {{ showDetail.quantite_stock }} unités
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Seuil d'alerte</span>
+                <span class="detail-val">{{ showDetail.seuil_alerte }} unités</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Bénéfice unitaire</span>
+                <span class="detail-val" style="color:#2d9e6e;">
+                  {{ showDetail.benefice_unitaire | number }} FCFA
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTRES -->
+      <div class="filters-bar" *ngIf="!showModal && !showDetail">
+        <div class="search-bar">
+          <span>🔍</span>
+          <input
+            type="text"
+            placeholder="Rechercher par nom..."
+            (input)="onSearch($event)"
+          />
         </div>
         <select class="select-filter" (change)="onFilterCat($event)">
           <option value="">Toutes les catégories</option>
@@ -118,23 +172,23 @@
         </select>
       </div>
 
-      <div class="loading" *ngIf="isLoading">
+      <!-- LOADING -->
+      <div class="loading-wrap" *ngIf="isLoading">
         <div class="spinner"></div>
         <p>Chargement des produits...</p>
       </div>
 
-      <div *ngIf="!isLoading && !showModal">
+      <!-- LISTE PRODUITS -->
+      <div *ngIf="!isLoading && !showModal && !showDetail">
 
-        <div class="empty" *ngIf="produitsFiltres.length === 0">
+        <div class="empty-state" *ngIf="produitsFiltres.length === 0">
           <div class="empty-icon">📦</div>
           <h3>Aucun produit trouvé</h3>
           <p>Commencez par ajouter votre premier produit</p>
-          <button class="btn-primary" (click)="openModal()">
-            <i class="ti ti-plus"></i> Ajouter un produit
-          </button>
+          <button class="btn-primary" (click)="openModal()">+ Ajouter un produit</button>
         </div>
 
-        <div class="table-wrap" *ngIf="produitsFiltres.length > 0">
+        <div class="card table-card" *ngIf="produitsFiltres.length > 0">
           <table>
             <thead>
               <tr>
@@ -144,49 +198,46 @@
                 <th>Prix vente</th>
                 <th>Stock</th>
                 <th>Statut</th>
-                <th>Actions</th>
+                <th *ngIf="isAdmin">Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let p of produitsFiltres">
                 <td>
                   <div class="p-info">
-                    <div class="p-img" *ngIf="p.image">
-                      <img [src]="p.image" [alt]="p.nom" />
+                    <div class="p-img-wrap" *ngIf="p.image_url">
+                      <img [src]="p.image_url" [alt]="p.nom" class="p-img" />
                     </div>
-                    <div class="p-avatar" *ngIf="!p.image">
+                    <div class="p-avatar" *ngIf="!p.image_url">
                       {{ p.nom.charAt(0).toUpperCase() }}
                     </div>
                     <div>
-                      <p class="p-nom">{{ p.nom }}</p>
-                      <p class="p-desc">{{ p.description || '—' }}</p>
+                      <div class="p-nom">{{ p.nom }}</div>
+                      <div class="p-desc">{{ p.description || '—' }}</div>
                     </div>
                   </div>
                 </td>
-                <td><span class="tag-cat">{{ p.categorie_nom || 'Sans catégorie' }}</span></td>
+                <td>
+                  <span class="tag-cat">{{ p.categorie_nom || 'Sans catégorie' }}</span>
+                </td>
                 <td class="td-price">{{ p.prix_achat | number }} F</td>
                 <td class="td-price">{{ p.prix_vente | number }} F</td>
                 <td>
-                  <span class="stock-num" [ngClass]="{
-                    'danger' : p.quantite_stock <= 2,
-                    'warn'   : p.quantite_stock > 2 && p.stock_faible,
-                    'ok'     : !p.stock_faible
-                  }">{{ p.quantite_stock }}</span>
+                  <span class="stock-num"
+                    [style.color]="p.quantite_stock <= 2 ? '#e24b4a' : p.stock_faible ? '#ba7517' : '#2d9e6e'">
+                    {{ p.quantite_stock }}
+                  </span>
                 </td>
                 <td>
-                  <span class="tag" [ngClass]="{
-                    'tag-danger'  : p.stock_faible,
-                    'tag-success' : !p.stock_faible
-                  }">{{ p.stock_faible ? '⚠ Stock faible' : '✓ En stock' }}</span>
+                  <span class="tag" [ngClass]="p.stock_faible ? 'tag-danger' : 'tag-success'">
+                    {{ p.stock_faible ? '⚠ Stock faible' : '✓ En stock' }}
+                  </span>
                 </td>
                 <td>
                   <div class="row-actions">
-                    <button class="act-edit" (click)="openModal(p)" title="Modifier">
-                      <i class="ti ti-edit"></i>
-                    </button>
-                    <button class="act-del" (click)="deleteProduit(p.id)" title="Supprimer">
-                      <i class="ti ti-trash"></i>
-                    </button>
+                    <button class="act-btn act-detail" (click)="voirDetail(p)" title="Voir détails">👁</button>
+                    <button class="act-btn act-edit" (click)="openModal(p)" title="Modifier" *ngIf="isAdmin">✏️</button>
+                    <button class="act-btn act-del" (click)="deleteProduit(p)" title="Supprimer" *ngIf="isAdmin">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -197,4 +248,21 @@
 
     </div>
   </main>
+
+  <!-- MODAL CONFIRMATION SUPPRESSION -->
+  <div class="modal-overlay" *ngIf="showDeleteModal">
+    <div class="modal-confirm">
+      <div class="modal-icon">🗑</div>
+      <h3 class="modal-title">Supprimer ce produit ?</h3>
+      <p class="modal-msg">
+        Vous êtes sur le point de supprimer <strong>{{ produitToDelete?.nom }}</strong>.
+        Cette action est irréversible.
+      </p>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="cancelDelete()">Annuler</button>
+        <button class="btn-danger" (click)="confirmDelete()">Oui, supprimer</button>
+      </div>
+    </div>
+  </div>
+
 </div>

@@ -1,44 +1,51 @@
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon">
-      <span></span><span></span>
+    <div class="logo-icon">S</div>
+    <div>
+      <div class="logo-text">StockMaster</div>
+      <div class="logo-sub">{{ isAdmin ? 'Administration' : 'Gestion stocks' }}</div>
     </div>
-    <span class="logo-txt">STOCKMASTER</span>
   </div>
 
-  <p class="nav-section">NAVIGATION</p>
+  <nav class="nav-section">
+    <div class="nav-label">Menu</div>
 
-  <div class="nav-item" [class.active]="activePage === 'dashboard'" (click)="navigateTo('dashboard')">
-    <i class="ti ti-layout-dashboard"></i><span>Dashboard</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'produits'" (click)="navigateTo('produits')">
-    <i class="ti ti-package"></i><span>Produits</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'categories'" (click)="navigateTo('categories')">
-    <i class="ti ti-tag"></i><span>Catégories</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'ventes'" (click)="navigateTo('ventes')">
-    <i class="ti ti-shopping-cart"></i><span>Ventes</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'factures'" (click)="navigateTo('factures')">
-    <i class="ti ti-receipt"></i><span>Factures</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'clients'" (click)="navigateTo('clients')">
-    <i class="ti ti-users"></i><span>Clients</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'fournisseurs'" (click)="navigateTo('fournisseurs')">
-    <i class="ti ti-truck"></i><span>Fournisseurs</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'entrees-stock'" (click)="navigateTo('entrees-stock')">
-    <i class="ti ti-arrow-up-circle"></i><span>Entrées stock</span>
-  </div>
-  <div class="nav-item" [class.active]="activePage === 'rapports'" (click)="navigateTo('rapports')">
-    <i class="ti ti-chart-bar"></i><span>Rapports</span>
+    <!-- MENU ADMIN -->
+    <ng-container *ngIf="isAdmin">
+      <div class="nav-item" [class.active]="activePage === 'admin-dashboard'"  (click)="navigateTo('admin-dashboard')" ><span class="ico">⊞</span><span>Dashboard</span></div>
+      <div class="nav-item" [class.active]="activePage === 'produits'"         (click)="navigateTo('produits')"         ><span class="ico">📦</span><span>Produits</span></div>
+      <div class="nav-item" [class.active]="activePage === 'categories'"       (click)="navigateTo('categories')"       ><span class="ico">🏷️</span><span>Catégories</span></div>
+      <div class="nav-item" [class.active]="activePage === 'fournisseurs'"     (click)="navigateTo('fournisseurs')"     ><span class="ico">🚚</span><span>Fournisseurs</span></div>
+      <div class="nav-item" [class.active]="activePage === 'entrees-stock'"    (click)="navigateTo('entrees-stock')"    ><span class="ico">📥</span><span>Entrées stock</span></div>
+      <div class="nav-item" [class.active]="activePage === 'ventes'"           (click)="navigateTo('ventes')"           ><span class="ico">🛒</span><span>Ventes</span></div>
+      <div class="nav-item" [class.active]="activePage === 'factures'"         (click)="navigateTo('factures')"         ><span class="ico">🧾</span><span>Factures</span></div>
+      <div class="nav-label" style="margin-top:8px;">Administration</div>
+      <div class="nav-item" [class.active]="activePage === 'utilisateurs'"     (click)="navigateTo('utilisateurs')"     ><span class="ico">👥</span><span>Utilisateurs</span></div>
+    </ng-container>
+
+    <!-- MENU UTILISATEUR -->
+   <ng-container *ngIf="!isAdmin">
+  <div class="nav-item" [class.active]="activePage === 'dashboard'"  (click)="navigateTo('dashboard')" ><span class="ico">⊞</span><span>Dashboard</span></div>
+  <div class="nav-item" [class.active]="activePage === 'ventes'"     (click)="navigateTo('ventes')"    ><span class="ico">🛒</span><span>Ventes</span></div>
+  <div class="nav-item" [class.active]="activePage === 'factures'"   (click)="navigateTo('factures')"  ><span class="ico">🧾</span><span>Factures</span></div>
+  <div class="nav-item" [class.active]="activePage === 'clients'"    (click)="navigateTo('clients')"   ><span class="ico">👥</span><span>Clients</span></div>
+  <div class="nav-item" [class.active]="activePage === 'produits'"   (click)="navigateTo('produits')"  ><span class="ico">📦</span><span>Produits</span></div>
+  <div class="nav-item" [class.active]="activePage === 'categories'" (click)="navigateTo('categories')"><span class="ico">🏷️</span><span>Catégories</span></div>
+</ng-container>
+
+  </nav>
+
+  <div class="nav-logout" (click)="logout()">
+    <span class="ico">🚪</span> Déconnexion
   </div>
 
-  <div class="sidebar-bottom">
-    <div class="nav-item nav-logout" (click)="logout()">
-      <i class="ti ti-logout"></i><span>Déconnexion</span>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar">{{ userInitials }}</div>
+      <div>
+        <div class="user-name">{{ userName }}</div>
+        <div class="user-role">{{ isAdmin ? 'Administrateur' : 'Utilisateur' }}</div>
+      </div>
     </div>
   </div>
 </aside>

@@ -1,16 +1,28 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './auth/auth-guard';
+import { authGuard, adminGuard, userGuard } from './auth/auth-guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
+  // ── PAGE D'ACCUEIL ──
+  {
+    path: '',
+    loadComponent: () => import('./landing/landing').then(m => m.LandingComponent)
+  },
+
   {
     path: 'auth',
     loadChildren: () => import('./auth/auth-module').then(m => m.AuthModule)
   },
+
+  // ── ADMIN UNIQUEMENT ──
   {
-    path: 'dashboard',
-    loadComponent: () => import('./dashboard/dashboard').then(m => m.DashboardComponent),
-    canActivate: [authGuard]
+    path: 'admin-dashboard',
+    loadComponent: () => import('./admin-dashboard/admin-dashboard').then(m => m.AdminDashboard),
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'utilisateurs',
+    loadComponent: () => import('./utilisateurs/utilisateurs').then(m => m.UtilisateursComponent),
+    canActivate: [adminGuard]
   },
   {
     path: 'produits',
@@ -23,19 +35,44 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'clients',
-    loadComponent: () => import('./clients/clients').then(m => m.ClientsComponent),
-    canActivate: [authGuard]
-  },
-  {
     path: 'fournisseurs',
     loadComponent: () => import('./fournisseurs/fournisseurs').then(m => m.FournisseursComponent),
-    canActivate: [authGuard]
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'entrees-stock',
+    loadComponent: () => import('./entrees-stock/entrees-stock').then(m => m.EntreesStockComponent),
+    canActivate: [adminGuard]
+  },
+
+  // ── UTILISATEUR UNIQUEMENT ──
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./dashboard/dashboard').then(m => m.DashboardComponent),
+    canActivate: [userGuard]
   },
   {
     path: 'ventes',
     loadComponent: () => import('./ventes/ventes').then(m => m.VentesComponent),
     canActivate: [authGuard]
   },
-  { path: '**', redirectTo: 'auth/login' }
+  {
+    path: 'factures',
+    loadComponent: () => import('./factures/factures').then(m => m.FacturesComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'clients',
+    loadComponent: () => import('./clients/clients').then(m => m.ClientsComponent),
+    canActivate: [userGuard]
+  },
+
+  // ── ACCESSIBLE AUX DEUX ──
+  {
+    path: 'rapports',
+    loadComponent: () => import('./rapports/rapports').then(m => m.RapportsComponent),
+    canActivate: [authGuard]
+  },
+
+  { path: '**', redirectTo: '' }
 ];

@@ -1,0 +1,158 @@
+<div class="wrap">
+
+  <app-sidebar activePage="entrees-stock"></app-sidebar>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">Entrées de Stock</h1>
+        <p class="page-sub">{{ entrees.length }} entrée(s) enregistrée(s)</p>
+      </div>
+      <button class="btn-primary" (click)="openForm()">
+        <i class="ti ti-plus"></i> Nouvelle entrée
+      </button>
+    </header>
+
+    <div class="content">
+
+      <div class="toast-success" *ngIf="successMessage">
+        <i class="ti ti-circle-check"></i> {{ successMessage }}
+      </div>
+
+      <!-- FORMULAIRE -->
+      <div class="form-section" *ngIf="showForm">
+        <div class="form-header">
+          <h2>📦 Nouvelle entrée de stock</h2>
+          <p>Enregistrez un approvisionnement de produit</p>
+        </div>
+
+        <div class="error-box" *ngIf="errorMessage">
+          <i class="ti ti-alert-circle"></i> {{ errorMessage }}
+        </div>
+
+        <form [formGroup]="entreeForm" (ngSubmit)="saveEntree()">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Produit <span class="required">*</span></label>
+              <select formControlName="produit">
+                <option value="">Sélectionner un produit</option>
+                <option *ngFor="let p of produits" [value]="p.id">
+                  {{ p.nom }} (Stock actuel: {{ p.quantite_stock }})
+                </option>
+              </select>
+              <span class="err" *ngIf="entreeForm.get('produit')?.invalid && entreeForm.get('produit')?.touched">
+                Champ requis
+              </span>
+            </div>
+            <div class="form-group">
+              <label>Fournisseur</label>
+              <select formControlName="fournisseur">
+                <option value="">Sans fournisseur</option>
+                <option *ngFor="let f of fournisseurs" [value]="f.id">{{ f.nom }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Quantité reçue <span class="required">*</span></label>
+              <input type="number" formControlName="quantite" placeholder="Ex: 50" />
+              <span class="err" *ngIf="entreeForm.get('quantite')?.invalid && entreeForm.get('quantite')?.touched">
+                Quantité invalide
+              </span>
+            </div>
+            <div class="form-group">
+              <label>Prix d'achat unitaire (FCFA) <span class="required">*</span></label>
+              <div class="input-prefix">
+                <span>F</span>
+                <input type="number" formControlName="prix_achat" placeholder="0" />
+              </div>
+              <span class="err" *ngIf="entreeForm.get('prix_achat')?.invalid && entreeForm.get('prix_achat')?.touched">
+                Prix invalide
+              </span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Référence / Bon de livraison</label>
+            <input type="text" formControlName="reference" placeholder="Ex: BL-2026-001" />
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit" [disabled]="entreeForm.invalid">
+              <i class="ti ti-check"></i> Enregistrer l'entrée
+            </button>
+            <button type="button" class="btn-cancel" (click)="closeForm()">
+              <i class="ti ti-x"></i> Annuler
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- FILTRES -->
+      <div class="filters" *ngIf="!showForm">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" placeholder="Rechercher une entrée..." (input)="onSearch($event)" />
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement...</p>
+      </div>
+
+      <!-- LISTE -->
+      <div *ngIf="!isLoading && !showForm">
+
+        <div class="empty" *ngIf="entreesFiltres.length === 0">
+          <div class="empty-icon">📦</div>
+          <h3>Aucune entrée de stock</h3>
+          <p>Enregistrez votre premier approvisionnement</p>
+          <button class="btn-primary" (click)="openForm()">
+            <i class="ti ti-plus"></i> Nouvelle entrée
+          </button>
+        </div>
+
+        <div class="table-wrap" *ngIf="entreesFiltres.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Produit</th>
+                <th>Fournisseur</th>
+                <th>Quantité</th>
+                <th>Prix achat</th>
+                <th>Coût total</th>
+                <th>Référence</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of entreesFiltres">
+                <td>
+                  <div class="p-info">
+                    <div class="p-avatar">{{ e.produit_nom.charAt(0) }}</div>
+                    <span class="p-nom">{{ e.produit_nom }}</span>
+                  </div>
+                </td>
+                <td>{{ e.fournisseur_nom || '—' }}</td>
+                <td>
+                  <span class="qty-badge">+{{ e.quantite }}</span>
+                </td>
+                <td class="td-price">{{ e.prix_achat | number }} F</td>
+                <td class="td-price">{{ e.quantite * e.prix_achat | number }} F</td>
+                <td>{{ e.reference || '—' }}</td>
+                <td>{{ e.date_entree | date:'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
