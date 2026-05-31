@@ -23,14 +23,17 @@
 
         <div class="print-actions no-print">
           <button class="btn-print" (click)="imprimer()" *ngIf="!isAdmin">
-  <i class="ti ti-printer"></i> Imprimer
-</button>
+            <i class="ti ti-printer"></i> Imprimer
+          </button>
+          <button class="btn-pdf" (click)="telechargerPDF()" *ngIf="!isAdmin" [disabled]="isGeneratingPdf">
+            <i class="ti ti-file-type-pdf"></i> {{ isGeneratingPdf ? 'Génération...' : 'Télécharger PDF' }}
+          </button>
           <button class="btn-close" (click)="fermerDetail()">
             <i class="ti ti-arrow-left"></i> Retour
           </button>
         </div>
 
-        <div class="facture-doc">
+        <div class="facture-doc" #factureContent>
 
           <div class="doc-header">
             <div class="doc-logo">

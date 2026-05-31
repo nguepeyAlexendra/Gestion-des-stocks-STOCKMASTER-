@@ -244,3 +244,13 @@ tbody td { padding: 16px 20px; font-size: 15px; color: #374151; }
   .facture-wrapper { max-width: 100% !important; }
   .facture-doc { box-shadow: none !important; border-radius: 0 !important; }
 }
+
+.btn-pdf {
+  display: flex; align-items: center; gap: 8px;
+  background: #e24b4a; color: white; border: none;
+  padding: 10px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.2s;
+}
+.btn-pdf:hover    { background: #c93a39; }
+.btn-pdf:disabled { opacity: 0.5; cursor: not-allowed; }
