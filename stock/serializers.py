@@ -60,6 +60,31 @@ class UserSerializer(serializers.ModelSerializer):
             return obj.profil.is_admin
         except:
             return False
+        
+class ProfilSerializer(serializers.ModelSerializer):
+    username   = serializers.CharField(source='user.username', read_only=True)
+    email      = serializers.CharField(source='user.email', read_only=True)
+    role       = serializers.ReadOnlyField()
+    is_admin   = serializers.ReadOnlyField()
+    photo_url  = serializers.ReadOnlyField()
+
+    class Meta:
+        model  = ProfilUtilisateur
+        fields = [
+            'id', 'username', 'email', 'role', 'is_admin',
+            'photo', 'photo_url', 'prenom', 'nom_complet',
+            'telephone', 'adresse', 'created_at'
+        ]
+
+class ChangerMotDePasseSerializer(serializers.Serializer):
+    ancien_mot_de_passe  = serializers.CharField(required=True)
+    nouveau_mot_de_passe = serializers.CharField(required=True, min_length=6)
+
+    def validate_ancien_mot_de_passe(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Ancien mot de passe incorrect.")
+        return value
 
 
 # ── CREATION UTILISATEUR PAR ADMIN ──

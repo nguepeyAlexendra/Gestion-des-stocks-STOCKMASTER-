@@ -12,6 +12,11 @@ class ProfilUtilisateur(models.Model):
     ]
     user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profil')
     role       = models.CharField(max_length=20, choices=ROLE_CHOICES, default='utilisateur')
+    photo      = models.ImageField(upload_to='profils/', blank=True, null=True)
+    prenom     = models.CharField(max_length=100, blank=True, null=True)
+    nom_complet= models.CharField(max_length=100, blank=True, null=True)
+    telephone  = models.CharField(max_length=20, blank=True, null=True)
+    adresse    = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -20,6 +25,12 @@ class ProfilUtilisateur(models.Model):
     @property
     def is_admin(self):
         return self.role == 'admin'
+
+    @property
+    def photo_url(self):
+        if self.photo:
+            return f'http://127.0.0.1:8000{self.photo.url}'
+        return None
 
     class Meta:
         verbose_name = 'Profil utilisateur'

@@ -13,7 +13,7 @@ from .models import (
     Client, Vente, Facture, EntreeStock
 )
 from .serializers import (
-    RegisterSerializer, UserSerializer, CreateUserSerializer,
+    ChangerMotDePasseSerializer, ProfilSerializer, RegisterSerializer, UserSerializer, CreateUserSerializer,
     CategorieSerializer, FournisseurSerializer, ProduitSerializer,
     ClientSerializer, VenteSerializer, FactureSerializer, EntreeStockSerializer
 )
@@ -51,6 +51,62 @@ class ProfileView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+    
+class ProfilDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            profil = request.user.profil
+        except:
+            profil = ProfilUtilisateur.objects.create(user=request.user)
+        serializer = ProfilSerializer(profil, context={'request': request})
+        return Response(serializer.data)
+
+    def put(self, request):
+        try:
+            profil = request.user.profil
+        except:
+            profil = ProfilUtilisateur.objects.create(user=request.user)
+
+        # Mise à jour email et username
+        if 'email' in request.data:
+            request.user.email = request.data['email']
+            request.user.save()
+
+        serializer = ProfilSerializer(profil, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+
+class ChangerMotDePasseView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangerMotDePasseSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            request.user.set_password(serializer.validated_data['nouveau_mot_de_passe'])
+            request.user.save()
+            return Response({'message': 'Mot de passe changé avec succès !'})
+        return Response(serializer.errors, status=400)
+
+
+class StatistiquesUtilisateurView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user     = request.user
+        ventes   = Vente.objects.filter(user=user)
+        factures = Facture.objects.filter(user=user)
+        clients  = Client.objects.filter(user=user)
+        return Response({
+            'total_ventes'     : ventes.count(),
+            'chiffre_affaires' : sum(v.montant_total for v in ventes),
+            'total_clients'    : clients.count(),
+            'total_factures'   : factures.count(),
+        })
 
 
 # ── GESTION UTILISATEURS PAR ADMIN ──
