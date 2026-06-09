@@ -39,7 +39,7 @@ class ProfilUtilisateur(models.Model):
 
 # ── CATEGORIE ──
 class Categorie(models.Model):
-    nom         = models.CharField(max_length=100)
+    nom         = models.CharField(max_length=100, unique=True)  # ← AJOUTE unique=True
     description = models.TextField(blank=True, null=True)
     icone       = models.CharField(max_length=10, blank=True, null=True, default='🏷️')
     created_at  = models.DateTimeField(auto_now_add=True)
@@ -51,7 +51,6 @@ class Categorie(models.Model):
         ordering     = ['nom']
         verbose_name = 'Catégorie'
         verbose_name_plural = 'Catégories'
-
 
 # ── FOURNISSEUR ──
 class Fournisseur(models.Model):

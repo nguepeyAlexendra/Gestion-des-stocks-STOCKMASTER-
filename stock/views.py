@@ -1,11 +1,11 @@
 from datetime import date
-from django.db.models import Sum, Count, Q, F  # ✅ AJOUTÉ : Pour les agrégations SQL rapides
+from django.db.models import Sum, Count, Q, F
 from django.contrib.auth.models import User
 from rest_framework import generics, permissions, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import ValidationError  # ✅ CORRIGÉ : Suppression du backslash \ à la fin
+from rest_framework.exceptions import ValidationError
 
 from .models import (
     ProfilUtilisateur, Categorie, Fournisseur, Produit,
@@ -23,7 +23,7 @@ class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         try:
             return request.user.profil.is_admin
-        except (ProfilUtilisateur.DoesNotExist, AttributeError):  # ✅ CORRIGÉ : Exception précise
+        except (ProfilUtilisateur.DoesNotExist, AttributeError):
             return False
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -32,7 +32,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return request.user.is_authenticated
         try:
             return request.user.profil.is_admin
-        except (ProfilUtilisateur.DoesNotExist, AttributeError):  # ✅ CORRIGÉ : Exception précise
+        except (ProfilUtilisateur.DoesNotExist, AttributeError):
             return False
 
 
@@ -56,7 +56,6 @@ class ProfilDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def _get_or_create_profil(self, user):
-        """✅ OPTIMISÉ : Méthode helper pour éviter les try/except répétitifs"""
         profil = getattr(user, 'profil', None)
         if not profil:
             profil = ProfilUtilisateur.objects.create(user=user)
@@ -67,13 +66,9 @@ class ProfilDetailView(APIView):
         serializer = ProfilSerializer(profil, context={'request': request})
         return Response(serializer.data)
 
-    def patch(self, request):  # ✅ CORRIGÉ : PUT remplacé par PATCH (mise à jour partielle)
+    def patch(self, request):
         profil = self._get_or_create_profil(request.user)
-        
-        # Le serializer ProfilSerializer gère maintenant la mise à jour de 'user' (email/username)
-        # ET du 'profil' (photo, téléphone, etc.) en une seule fois grâce à sa méthode update().
         serializer = ProfilSerializer(profil, data=request.data, partial=True, context={'request': request})
-        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -97,15 +92,12 @@ class StatistiquesUtilisateurView(APIView):
 
     def get(self, request):
         user = request.user
-        
-        # ✅ OPTIMISÉ CRITIQUE : Utilisation des agrégations Django (SQL) au lieu de boucles Python
-        # Cela évite de charger des milliers de lignes en mémoire RAM.
         ventes_qs = Vente.objects.filter(user=user)
         ca_aggrege = ventes_qs.filter(statut='payee').aggregate(total=Sum('montant_total'))['total']
 
         return Response({
             'total_ventes': ventes_qs.count(),
-            'chiffre_affaires': float(ca_aggrege or 0),  # 'or 0' évite l'erreur si aucune vente
+            'chiffre_affaires': float(ca_aggrege or 0),
             'total_clients': Client.objects.filter(user=user).count(),
             'total_factures': Facture.objects.filter(user=user).count(),
         })
@@ -147,7 +139,6 @@ class DeleteUserView(APIView):
 class CategorieViewSet(viewsets.ModelViewSet):
     serializer_class = CategorieSerializer
     permission_classes = [IsAdminOrReadOnly]
-
     def get_queryset(self):
         return Categorie.objects.all()
 
@@ -156,7 +147,6 @@ class CategorieViewSet(viewsets.ModelViewSet):
 class FournisseurViewSet(viewsets.ModelViewSet):
     serializer_class = FournisseurSerializer
     permission_classes = [IsAdminOrReadOnly]
-
     def get_queryset(self):
         return Fournisseur.objects.all()
 
@@ -165,13 +155,11 @@ class FournisseurViewSet(viewsets.ModelViewSet):
 class ProduitViewSet(viewsets.ModelViewSet):
     serializer_class = ProduitSerializer
     permission_classes = [IsAdminOrReadOnly]
-
     def get_queryset(self):
         return Produit.objects.all()
 
     @action(detail=False, methods=['get'])
     def stock_faible(self, request):
-        # ✅ OPTIMISÉ : Filtrage direct en base de données au lieu de boucle Python
         produits = self.get_queryset().filter(quantite_stock__lte=F('seuil_alerte'))
         serializer = self.get_serializer(produits, many=True)
         return Response(serializer.data)
@@ -179,7 +167,6 @@ class ProduitViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def statistiques(self, request):
         queryset = self.get_queryset()
-        # ✅ OPTIMISÉ : Agrégation SQL pour la valeur du stock
         stats = queryset.aggregate(
             total=Count('id'),
             faible=Count('id', filter=Q(quantite_stock__lte=F('seuil_alerte'))),
@@ -196,7 +183,6 @@ class ProduitViewSet(viewsets.ModelViewSet):
 class ClientViewSet(viewsets.ModelViewSet):
     serializer_class = ClientSerializer
     permission_classes = [permissions.IsAuthenticated]
-
     def get_queryset(self):
         try:
             if self.request.user.profil.is_admin:
@@ -213,7 +199,6 @@ class ClientViewSet(viewsets.ModelViewSet):
 class VenteViewSet(viewsets.ModelViewSet):
     serializer_class = VenteSerializer
     permission_classes = [permissions.IsAuthenticated]
-
     def get_queryset(self):
         try:
             if self.request.user.profil.is_admin:
@@ -225,9 +210,7 @@ class VenteViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         try:
             if self.request.user.profil.is_admin:
-                raise ValidationError({
-                    "detail": "Action interdite : Un gestionnaire/administrateur ne peut pas effectuer de ventes."
-                })
+                raise ValidationError({"detail": "Action interdite : Un gestionnaire/administrateur ne peut pas effectuer de ventes."})
         except (ProfilUtilisateur.DoesNotExist, AttributeError):
             pass
         serializer.save(user=self.request.user)
@@ -235,9 +218,7 @@ class VenteViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def statistiques(self, request):
         queryset = self.get_queryset()
-        # ✅ OPTIMISÉ : Agrégation SQL au lieu de sum() en Python
         ca_aggrege = queryset.filter(statut='payee').aggregate(total=Sum('montant_total'))['total']
-        
         return Response({
             'total_ventes': queryset.count(),
             'chiffre_affaires': float(ca_aggrege or 0),
@@ -250,7 +231,6 @@ class FactureViewSet(viewsets.ModelViewSet):
     serializer_class = FactureSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'head', 'options']
-
     def get_queryset(self):
         try:
             if self.request.user.profil.is_admin:
@@ -264,7 +244,6 @@ class FactureViewSet(viewsets.ModelViewSet):
 class EntreeStockViewSet(viewsets.ModelViewSet):
     serializer_class = EntreeStockSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
-
     def get_queryset(self):
         return EntreeStock.objects.all()
 
