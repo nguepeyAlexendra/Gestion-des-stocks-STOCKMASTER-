@@ -102,30 +102,59 @@ toggleDark(): void {
   }
 
   saveCategorie() {
-    if (this.categorieForm.invalid) return;
-    const data = this.categorieForm.value;
-    if (this.isEditing && this.editingId) {
-      this.http.put(`${this.apiUrl}/categories/${this.editingId}/`, data).subscribe({
-        next: () => {
-          this.successMessage = 'Catégorie modifiée avec succès !';
-          this.closeForm();
-          this.loadCategories();
-          setTimeout(() => this.successMessage = '', 3000);
-        },
-        error: () => this.errorMessage = 'Erreur lors de la modification.'
-      });
-    } else {
-      this.http.post(`${this.apiUrl}/categories/`, data).subscribe({
-        next: () => {
-          this.successMessage = 'Catégorie ajoutée avec succès !';
-          this.closeForm();
-          this.loadCategories();
-          setTimeout(() => this.successMessage = '', 3000);
-        },
-        error: () => this.errorMessage = 'Erreur lors de l\'ajout.'
-      });
-    }
+  if (this.categorieForm.invalid) return;
+  
+  const data = this.categorieForm.value;
+  const nomSaisi = data.nom.trim().toLowerCase();
+
+  // ✅ VALIDATION FRONTEND : vérifier les doublons AVANT l'envoi
+  const doublon = this.categories.find(c => 
+    c.nom.trim().toLowerCase() === nomSaisi && 
+    c.id !== this.editingId  // On exclut la catégorie qu'on est en train de modifier
+  );
+
+  if (doublon) {
+    this.errorMessage = `Une catégorie nommée "${data.nom}" existe déjà.`;
+    return;
   }
+
+  this.errorMessage = '';
+
+  if (this.isEditing && this.editingId) {
+    this.http.put(`${this.apiUrl}/categories/${this.editingId}/`, data).subscribe({
+      next: () => {
+        this.successMessage = 'Catégorie modifiée avec succès !';
+        this.closeForm();
+        this.loadCategories();
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: (err) => {
+        // ✅ Gestion propre de l'erreur backend
+        if (err.status === 400 && err.error?.nom) {
+          this.errorMessage = err.error.nom[0]; // "categorie avec ce Nom existe déjà."
+        } else {
+          this.errorMessage = 'Erreur lors de la modification.';
+        }
+      }
+    });
+  } else {
+    this.http.post(`${this.apiUrl}/categories/`, data).subscribe({
+      next: () => {
+        this.successMessage = 'Catégorie ajoutée avec succès !';
+        this.closeForm();
+        this.loadCategories();
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: (err) => {
+        if (err.status === 400 && err.error?.nom) {
+          this.errorMessage = err.error.nom[0];
+        } else {
+          this.errorMessage = 'Erreur lors de l\'ajout.';
+        }
+      }
+    });
+  }
+}
 
   deleteCategorie(id: number) {
     if (!confirm('Voulez-vous vraiment supprimer cette catégorie ?')) return;

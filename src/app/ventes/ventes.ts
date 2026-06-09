@@ -37,6 +37,7 @@ export class VentesComponent implements OnInit {
     this.venteForm = this.fb.group({
       client       : [''],
       montant_recu : ['', [Validators.required, Validators.min(0)]],
+      // ✅ Statut forcé à 'payee' - plus de select
       statut       : ['payee']
     });
   }
@@ -133,67 +134,79 @@ export class VentesComponent implements OnInit {
   }
 
   enregistrerVente() {
-    if (this.panier.length === 0) {
-      this.errorMessage = 'Veuillez ajouter au moins un produit au panier.';
-      return;
-    }
-    if (this.venteForm.invalid) {
-      this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
-      return;
-    }
-
-    // Vérification prix minimum
-    const produitSousPrix = this.panier.find(item => item.prix_unitaire < item.prix_min);
-    if (produitSousPrix) {
-      this.errorMessage = `Le prix de "${produitSousPrix.produit_nom}" (${produitSousPrix.prix_unitaire} F) ne peut pas être inférieur au prix minimum (${produitSousPrix.prix_min} F).`;
-      return;
-    }
-     // Vérification montant reçu suffisant
-const montantRecu = parseFloat(this.venteForm.get('montant_recu')?.value);
-if (montantRecu < this.montantTotal) {
-  this.errorMessage = `Montant insuffisant ! Le client doit payer au moins ${this.montantTotal} F. Montant reçu : ${montantRecu} F.`;
-  return;
-}
-    const data = {
-      client       : this.venteForm.get('client')?.value || null,
-      montant_recu : parseFloat(this.venteForm.get('montant_recu')?.value),
-      statut       : this.venteForm.get('statut')?.value,
-      lignes       : this.panier.map(item => ({
-        produit       : item.produit,
-        quantite      : item.quantite,
-        prix_unitaire : item.prix_unitaire
-      }))
-    };
-
-    this.http.post(`${this.apiUrl}/ventes/`, data).subscribe({
-      next: () => {
-        this.successMessage = 'Vente enregistrée avec succès !';
-        this.fermerForm();
-        this.loadVentes();
-        this.loadProduits();
-        setTimeout(() => this.successMessage = '', 3000);
-      },
-      error: (err) => {
-        if (err.error?.lignes) {
-          const lignesErrors = err.error.lignes;
-          const firstError = lignesErrors.find((l: any) => l && Object.keys(l).length > 0);
-          if (firstError) {
-            const errorMsg = Object.values(firstError)[0];
-            this.errorMessage = Array.isArray(errorMsg) ? errorMsg[0] as string : errorMsg as string;
-          } else {
-            this.errorMessage = 'Erreur sur les lignes de vente.';
-          }
-        } else if (err.error?.non_field_errors) {
-          this.errorMessage = err.error.non_field_errors[0];
-        } else if (err.error?.detail) {
-          this.errorMessage = err.error.detail;
-        } else {
-          this.errorMessage = 'Erreur lors de l\'enregistrement.';
-        }
-      }
-    });
+  if (this.panier.length === 0) {
+    this.errorMessage = 'Veuillez ajouter au moins un produit au panier.';
+    return;
   }
 
+  const montantRecu = parseFloat(this.venteForm.get('montant_recu')?.value);
+
+  // ✅ VALIDATION 1 : Montant reçu vide ou non numérique
+  if (isNaN(montantRecu) || this.venteForm.get('montant_recu')?.value === '') {
+    this.errorMessage = 'Veuillez saisir le montant reçu.';
+    return;
+  }
+
+  // ✅ VALIDATION 2 : Montant reçu négatif
+  if (montantRecu < 0) {
+    this.errorMessage = 'Le montant reçu ne peut pas être négatif.';
+    return;
+  }
+
+  // ✅ VALIDATION 3 : Montant reçu insuffisant
+  if (montantRecu < this.montantTotal) {
+    this.errorMessage = `Montant insuffisant ! Le client doit payer au moins ${this.montantTotal.toLocaleString()} F. Montant reçu : ${montantRecu.toLocaleString()} F.`;
+    return;
+  }
+
+  // ✅ Vérification prix minimum
+  const produitSousPrix = this.panier.find(item => item.prix_unitaire < item.prix_min);
+  if (produitSousPrix) {
+    this.errorMessage = `Le prix de "${produitSousPrix.produit_nom}" (${produitSousPrix.prix_unitaire} F) ne peut pas être inférieur au prix minimum (${produitSousPrix.prix_min} F).`;
+    return;
+  }
+
+  this.errorMessage = '';
+
+  const data = {
+    client       : this.venteForm.get('client')?.value || null,
+    montant_recu : montantRecu,
+    statut       : 'payee',
+    lignes       : this.panier.map(item => ({
+      produit       : item.produit,
+      quantite      : item.quantite,
+      prix_unitaire : item.prix_unitaire
+    }))
+  };
+
+  this.http.post(`${this.apiUrl}/ventes/`, data).subscribe({
+    next: () => {
+      this.successMessage = 'Vente enregistrée avec succès !';
+      this.fermerForm();
+      this.loadVentes();
+      this.loadProduits();
+      setTimeout(() => this.successMessage = '', 3000);
+    },
+    error: (err) => {
+      if (err.error?.lignes) {
+        const lignesErrors = err.error.lignes;
+        const firstError = lignesErrors.find((l: any) => l && Object.keys(l).length > 0);
+        if (firstError) {
+          const errorMsg = Object.values(firstError)[0];
+          this.errorMessage = Array.isArray(errorMsg) ? errorMsg[0] as string : errorMsg as string;
+        } else {
+          this.errorMessage = 'Erreur sur les lignes de vente.';
+        }
+      } else if (err.error?.non_field_errors) {
+        this.errorMessage = err.error.non_field_errors[0];
+      } else if (err.error?.detail) {
+        this.errorMessage = err.error.detail;
+      } else {
+        this.errorMessage = 'Erreur lors de l\'enregistrement.';
+      }
+    }
+  });
+}
   onSearch(event: any)     { this.searchTerm = event.target.value; }
   navigateTo(page: string) { this.router.navigate([`/${page}`]); }
 

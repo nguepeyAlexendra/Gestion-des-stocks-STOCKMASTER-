@@ -55,13 +55,10 @@ export class SidebarComponent implements OnInit {
   navigateTo(page: string) {
     this.router.navigate([`/${page}`]);
   }
-
-  logout() {
-    if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user_role');
-      this.router.navigate(['/auth/login']);
-    }
-  }
+logout() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user_role');
+  this.router.navigate(['/auth/login']);
+}
 }

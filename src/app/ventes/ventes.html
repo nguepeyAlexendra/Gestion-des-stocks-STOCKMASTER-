@@ -13,8 +13,8 @@
         <i class="ti ti-plus"></i> Nouvelle vente
       </button>
       <div class="dark-btn" (click)="toggleDark()">
-    {{ isDark ? '☀️' : '🌙' }}
-  </div>
+        {{ isDark ? '☀️' : '🌙' }}
+      </div>
     </header>
 
     <div class="content">
@@ -92,7 +92,7 @@
               </div>
             </div>
 
-            <!-- FORMULAIRE VENTE -->
+            <!-- FORMULAIRE VENTE (UNIQUE) -->
             <form [formGroup]="venteForm" (ngSubmit)="enregistrerVente()" *ngIf="panier.length > 0">
 
               <div class="form-group">
@@ -105,21 +105,24 @@
                 </select>
               </div>
 
-              <div class="form-group">
-                <label>Statut</label>
-                <select formControlName="statut">
-                  <option value="payee">Payée</option>
-                  <option value="en_attente">En attente</option>
-                </select>
-              </div>
+              <!-- ✅ Statut supprimé - plus de select -->
 
               <div class="form-group">
                 <label>Montant reçu (F) *</label>
                 <div class="input-prefix">
                   <span>F</span>
                   <input type="number" formControlName="montant_recu"
-                    [placeholder]="montantTotal.toString()" />
+                    [placeholder]="montantTotal.toString()" 
+                    min="0"
+                    step="0.01" />
                 </div>
+                <!-- ✅ Messages d'erreur en temps réel -->
+                <small class="field-error" *ngIf="venteForm.get('montant_recu')?.touched && venteForm.get('montant_recu')?.hasError('min')">
+                  Le montant ne peut pas être négatif
+                </small>
+                <small class="field-error" *ngIf="venteForm.get('montant_recu')?.touched && venteForm.get('montant_recu')?.hasError('required')">
+                  Le montant est obligatoire
+                </small>
               </div>
 
               <div class="monnaie" *ngIf="venteForm.get('montant_recu')?.value">

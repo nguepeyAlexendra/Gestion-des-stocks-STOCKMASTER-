@@ -302,12 +302,10 @@ export class AdminDashboard implements OnInit, AfterViewInit {
 
   navigateTo(page: string): void { this.router.navigate(['/' + page]); }
 
-  logout(): void {
-    if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('stockmaster_dark');
-      this.router.navigate(['/auth/login']);
-    }
-  }
+  logout() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user_role');
+  this.router.navigate(['/auth/login']);
+}
 }
