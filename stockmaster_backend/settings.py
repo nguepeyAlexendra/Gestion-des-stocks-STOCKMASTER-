@@ -11,7 +11,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-changez-moi-en-produc
 
 DEBUG = True
 
-ALLOWED_HOSTS = []# Applications installées
+ALLOWED_HOSTS = ['*']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
