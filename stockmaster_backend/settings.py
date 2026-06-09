@@ -1,6 +1,8 @@
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import os
+import dj_database_url
 
 # Répertoire de base du projet
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -36,6 +38,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.security.SecurityMiddleware',
 ]
 
 ROOT_URLCONF = 'stockmaster_backend.urls'
@@ -60,10 +64,11 @@ WSGI_APPLICATION = 'stockmaster_backend.wsgi.application'
 
 # Base de données
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 # Validation des mots de passe
@@ -121,3 +126,7 @@ EMAIL_USE_TLS       = True
 EMAIL_HOST_USER     = 'emmanuellenjomo07@gmail.com'
 EMAIL_HOST_PASSWORD = 'hsjnvnywmudsigdc'
 DEFAULT_FROM_EMAIL  = 'StockMaster <emmanuellenjomo07@gmail.com>'
+
+# --- FICHIERS STATIQUES (ADMIN DJANGO) ---
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
