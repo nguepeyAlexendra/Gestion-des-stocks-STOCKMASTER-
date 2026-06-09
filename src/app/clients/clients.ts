@@ -4,16 +4,17 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { SidebarComponent } from '../shared/sidebar/sidebar';
+import { DarkModeService } from '../shared/dark-mode';
 
 @Component({
-  selector: 'app-clients',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SidebarComponent],
+  selector   : 'app-clients',
+  standalone : true,
+  imports    : [CommonModule, ReactiveFormsModule, SidebarComponent],
   templateUrl: './clients.html',
-  styleUrls: ['./clients.css']
+  styleUrls  : ['./clients.css']
 })
 export class ClientsComponent implements OnInit {
-  clients        : any[] = [];
+  clients        : any[]         = [];
   isLoading      = true;
   showForm       = false;
   isEditing      = false;
@@ -21,13 +22,15 @@ export class ClientsComponent implements OnInit {
   errorMessage   = '';
   successMessage = '';
   searchTerm     = '';
+  isDark         = false;
   apiUrl         = 'http://127.0.0.1:8000/api';
   clientForm     : FormGroup;
 
   constructor(
-    private http   : HttpClient,
-    private fb     : FormBuilder,
-    private router : Router
+    private http            : HttpClient,
+    private fb              : FormBuilder,
+    private router          : Router,
+    private darkModeService : DarkModeService
   ) {
     this.clientForm = this.fb.group({
       nom       : ['', [Validators.required]],
@@ -38,15 +41,20 @@ export class ClientsComponent implements OnInit {
     });
   }
 
-  ngOnInit() { this.loadClients(); }
+  ngOnInit() {
+    this.isDark = this.darkModeService.getDarkMode();
+    this.loadClients();
+  }
+
+  toggleDark(): void {
+    this.darkModeService.toggleDark();
+    this.isDark = this.darkModeService.getDarkMode();
+  }
 
   loadClients() {
     this.isLoading = true;
     this.http.get<any>(`${this.apiUrl}/clients/`).subscribe({
-      next : (data) => {
-        this.clients   = data.results || data;
-        this.isLoading = false;
-      },
+      next : (data) => { this.clients = data.results || data; this.isLoading = false; },
       error: () => this.isLoading = false
     });
   }
@@ -54,7 +62,7 @@ export class ClientsComponent implements OnInit {
   get clientsFiltres() {
     return this.clients.filter(c =>
       c.nom.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-      (c.prenom && c.prenom.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+      (c.prenom    && c.prenom.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
       (c.telephone && c.telephone.includes(this.searchTerm))
     );
   }
@@ -85,8 +93,7 @@ export class ClientsComponent implements OnInit {
       this.http.put(`${this.apiUrl}/clients/${this.editingId}/`, data).subscribe({
         next: () => {
           this.successMessage = 'Client modifié avec succès !';
-          this.closeForm();
-          this.loadClients();
+          this.closeForm(); this.loadClients();
           setTimeout(() => this.successMessage = '', 3000);
         },
         error: () => this.errorMessage = 'Erreur lors de la modification.'
@@ -95,8 +102,7 @@ export class ClientsComponent implements OnInit {
       this.http.post(`${this.apiUrl}/clients/`, data).subscribe({
         next: () => {
           this.successMessage = 'Client ajouté avec succès !';
-          this.closeForm();
-          this.loadClients();
+          this.closeForm(); this.loadClients();
           setTimeout(() => this.successMessage = '', 3000);
         },
         error: () => this.errorMessage = 'Erreur lors de l\'ajout.'
@@ -115,15 +121,17 @@ export class ClientsComponent implements OnInit {
     });
   }
 
-  onSearch(event: any) { this.searchTerm = event.target.value; }
+  getInitiales(nom: string, prenom: string): string {
+    return `${nom.charAt(0)}${prenom ? prenom.charAt(0) : ''}`.toUpperCase();
+  }
+
+  onSearch(event: any)     { this.searchTerm = event.target.value; }
   navigateTo(page: string) { this.router.navigate([`/${page}`]); }
+
   logout() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_role');
     this.router.navigate(['/auth/login']);
-  }
-
-  getInitiales(nom: string, prenom: string): string {
-    return `${nom.charAt(0)}${prenom ? prenom.charAt(0) : ''}`.toUpperCase();
   }
 }

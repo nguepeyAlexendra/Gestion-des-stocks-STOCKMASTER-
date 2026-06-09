@@ -1,0 +1,179 @@
+<div class="app" [class.dark-mode]="isDark">
+
+  <app-sidebar activePage="profil"></app-sidebar>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">Mon Profil</div>
+        <div class="topbar-sub">Gérez vos informations personnelles</div>
+      </div>
+      <div class="topbar-right">
+        <div class="dark-btn" (click)="toggleDark()">
+          {{ isDark ? '☀️' : '🌙' }}
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="loading-wrap" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Chargement du profil...</p>
+      </div>
+
+      <div *ngIf="!isLoading">
+
+        <!-- SUCCESS / ERROR -->
+        <div class="toast-success" *ngIf="successMessage">✅ {{ successMessage }}</div>
+        <div class="toast-error"   *ngIf="errorMessage">⚠ {{ errorMessage }}</div>
+
+        <div class="profil-grid">
+
+          <!-- CARTE PROFIL -->
+          <div class="card profil-card">
+            <div class="avatar-section">
+              <div class="avatar-wrap" (click)="photoInput.click()">
+                <img *ngIf="photoPreview || profil.photo" [src]="photoPreview || profil.photo" class="avatar-img" />
+                <div *ngIf="!photoPreview && !profil.photo" class="avatar-initiales">
+                  {{ userInitials }}
+                </div>
+                <div class="avatar-overlay">📷</div>
+              </div>
+              <input #photoInput type="file" accept="image/*" (change)="onPhotoChange($event)" style="display:none" />
+              <h2 class="profil-nom">{{ profil.first_name || profil.username }} {{ profil.last_name }}</h2>
+              <span class="role-badge" [ngClass]="isAdmin ? 'role-admin' : 'role-user'">
+                {{ isAdmin ? '👑 Administrateur' : '👤 Utilisateur' }}
+              </span>
+              <p class="profil-email">{{ profil.email }}</p>
+            </div>
+
+            <!-- STATS -->
+            <div class="stats-profil">
+              <div class="stat-item">
+                <div class="stat-num">{{ stats.total_ventes }}</div>
+                <div class="stat-lbl">Ventes</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">{{ formatMontant(stats.chiffre_affaires) }}</div>
+                <div class="stat-lbl">Chiffre d'affaires</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">{{ stats.total_clients }}</div>
+                <div class="stat-lbl">Clients</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num">{{ stats.total_factures }}</div>
+                <div class="stat-lbl">Factures</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- INFOS + MOT DE PASSE -->
+          <div class="right-col">
+
+            <!-- INFORMATIONS -->
+            <div class="card info-card">
+              <div class="card-header">
+                <div class="card-title">📋 Informations personnelles</div>
+                <button class="btn-edit" (click)="ouvrirEdit()" *ngIf="!editMode">✏️ Modifier</button>
+                <button class="btn-cancel-sm" (click)="annulerEdit()" *ngIf="editMode">✕ Annuler</button>
+              </div>
+
+              <!-- MODE AFFICHAGE -->
+              <div class="info-grid" *ngIf="!editMode">
+                <div class="info-item">
+                  <span class="info-label">Nom d'utilisateur</span>
+                  <span class="info-val">{{ profil.username }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Prénom</span>
+                  <span class="info-val">{{ profil.first_name || '—' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Nom</span>
+                  <span class="info-val">{{ profil.last_name || '—' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Email</span>
+                  <span class="info-val">{{ profil.email }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Téléphone</span>
+                  <span class="info-val">{{ profil.telephone || '—' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Adresse</span>
+                  <span class="info-val">{{ profil.adresse || '—' }}</span>
+                </div>
+              </div>
+
+              <!-- MODE EDITION -->
+              <div class="edit-grid" *ngIf="editMode">
+                <div class="form-group">
+                  <label>Prénom</label>
+                  <input type="text" [(ngModel)]="editForm.first_name" placeholder="Votre prénom" />
+                </div>
+                <div class="form-group">
+                  <label>Nom</label>
+                  <input type="text" [(ngModel)]="editForm.last_name" placeholder="Votre nom" />
+                </div>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" [(ngModel)]="editForm.email" placeholder="Votre email" />
+                </div>
+                <div class="form-group">
+                  <label>Téléphone</label>
+                  <input type="text" [(ngModel)]="editForm.telephone" placeholder="+237 6XX XXX XXX" />
+                </div>
+                <div class="form-group full-width">
+                  <label>Adresse</label>
+                  <input type="text" [(ngModel)]="editForm.adresse" placeholder="Votre adresse" />
+                </div>
+                <div class="form-actions full-width">
+                  <button class="btn-submit" (click)="sauvegarderProfil()">Enregistrer</button>
+                  <button class="btn-cancel" (click)="annulerEdit()">Annuler</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- MOT DE PASSE -->
+            <div class="card password-card">
+              <div class="card-header">
+                <div class="card-title">🔒 Sécurité</div>
+                <button class="btn-edit" (click)="showPasswordForm = !showPasswordForm">
+                  {{ showPasswordForm ? '✕ Annuler' : '🔑 Changer le mot de passe' }}
+                </button>
+              </div>
+
+              <div class="toast-success" *ngIf="passwordSuccess">✅ {{ passwordSuccess }}</div>
+              <div class="toast-error"   *ngIf="passwordError">⚠ {{ passwordError }}</div>
+
+              <div class="password-form" *ngIf="showPasswordForm">
+                <div class="form-group">
+                  <label>Mot de passe actuel</label>
+                  <input type="password" [(ngModel)]="passwordForm.old_password" placeholder="••••••••" />
+                </div>
+                <div class="form-group">
+                  <label>Nouveau mot de passe</label>
+                  <input type="password" [(ngModel)]="passwordForm.new_password" placeholder="••••••••" />
+                </div>
+                <div class="form-group">
+                  <label>Confirmer le mot de passe</label>
+                  <input type="password" [(ngModel)]="passwordForm.confirm_password" placeholder="••••••••" />
+                </div>
+                <button class="btn-submit" (click)="changerMotDePasse()">Changer le mot de passe</button>
+              </div>
+
+              <div class="password-info" *ngIf="!showPasswordForm">
+                <p>🔐 Votre mot de passe est sécurisé. Changez-le régulièrement pour plus de sécurité.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

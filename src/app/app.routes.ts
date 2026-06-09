@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, adminGuard, userGuard } from './auth/auth-guard';
 
+
 export const routes: Routes = [
   // ── PAGE D'ACCUEIL ──
   {
@@ -74,5 +75,10 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
 
+  {
+  path: 'profil',
+  loadComponent: () => import('./profil/profil').then(m => m.ProfilComponent),
+  canActivate: [authGuard]
+},
   { path: '**', redirectTo: '' }
 ];

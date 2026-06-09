@@ -509,3 +509,12 @@ body { font-family: 'Outfit', sans-serif; margin: 0; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .form-row   { grid-template-columns: 1fr; }
 }
+
+.sidebar-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
+  /* ❌ background: #7c5cbf;  ← ligne supprimée */
+}

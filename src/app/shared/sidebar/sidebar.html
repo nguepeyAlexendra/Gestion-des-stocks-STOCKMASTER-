@@ -1,6 +1,6 @@
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon">S</div>
+     <img src="assets/logo.png" alt="StockMaster" class="sidebar-logo-img" />
     <div>
       <div class="logo-text">StockMaster</div>
       <div class="logo-sub">{{ isAdmin ? 'Administration' : 'Gestion stocks' }}</div>
@@ -24,14 +24,20 @@
     </ng-container>
 
     <!-- MENU UTILISATEUR -->
-   <ng-container *ngIf="!isAdmin">
-  <div class="nav-item" [class.active]="activePage === 'dashboard'"  (click)="navigateTo('dashboard')" ><span class="ico">⊞</span><span>Dashboard</span></div>
-  <div class="nav-item" [class.active]="activePage === 'ventes'"     (click)="navigateTo('ventes')"    ><span class="ico">🛒</span><span>Ventes</span></div>
-  <div class="nav-item" [class.active]="activePage === 'factures'"   (click)="navigateTo('factures')"  ><span class="ico">🧾</span><span>Factures</span></div>
-  <div class="nav-item" [class.active]="activePage === 'clients'"    (click)="navigateTo('clients')"   ><span class="ico">👥</span><span>Clients</span></div>
-  <div class="nav-item" [class.active]="activePage === 'produits'"   (click)="navigateTo('produits')"  ><span class="ico">📦</span><span>Produits</span></div>
-  <div class="nav-item" [class.active]="activePage === 'categories'" (click)="navigateTo('categories')"><span class="ico">🏷️</span><span>Catégories</span></div>
-</ng-container>
+    <ng-container *ngIf="!isAdmin">
+      <div class="nav-item" [class.active]="activePage === 'dashboard'"  (click)="navigateTo('dashboard')" ><span class="ico">⊞</span><span>Dashboard</span></div>
+      <div class="nav-item" [class.active]="activePage === 'ventes'"     (click)="navigateTo('ventes')"    ><span class="ico">🛒</span><span>Ventes</span></div>
+      <div class="nav-item" [class.active]="activePage === 'factures'"   (click)="navigateTo('factures')"  ><span class="ico">🧾</span><span>Factures</span></div>
+      <div class="nav-item" [class.active]="activePage === 'clients'"    (click)="navigateTo('clients')"   ><span class="ico">👥</span><span>Clients</span></div>
+      <div class="nav-item" [class.active]="activePage === 'produits'"   (click)="navigateTo('produits')"  ><span class="ico">📦</span><span>Produits</span></div>
+      <div class="nav-item" [class.active]="activePage === 'categories'" (click)="navigateTo('categories')"><span class="ico">🏷️</span><span>Catégories</span></div>
+    </ng-container>
+
+    <!-- ✅ NOUVEAU : SECTION COMPTE (VISIBLE POUR TOUS) -->
+    <div class="nav-label" style="margin-top:8px;">Compte</div>
+    <div class="nav-item" [class.active]="activePage === 'profil'" (click)="navigateTo('profil')">
+      <span class="ico">👤</span><span>Mon Profil</span>
+    </div>
 
   </nav>
 
