@@ -9,6 +9,7 @@ from .views import (
     CategorieViewSet, FournisseurViewSet, ProduitViewSet,
     ClientViewSet, VenteViewSet, FactureViewSet, EntreeStockViewSet
 )
+
 router = DefaultRouter()
 router.register(r'categories',    CategorieViewSet,    basename='categorie')
 router.register(r'fournisseurs',  FournisseurViewSet,  basename='fournisseur')
@@ -19,14 +20,14 @@ router.register(r'factures',      FactureViewSet,      basename='facture')
 router.register(r'entrees-stock', EntreeStockViewSet,  basename='entree-stock')
 
 urlpatterns = [
-    path('auth/register/', RegisterView.as_view(),        name='register'),
-    path('auth/login/',    TokenObtainPairView.as_view(), name='login'),
-    path('auth/refresh/',  TokenRefreshView.as_view(),    name='token_refresh'),
-    path('auth/profile/',  ProfileView.as_view(),         name='profile'),
-    path('auth/users/',    CreateUserView.as_view(),       name='users'),
-    path('auth/users/<int:pk>/', DeleteUserView.as_view(), name='delete-user'),
-    path('auth/profil/',          ProfilDetailView.as_view(),          name='profil-detail'),
-    path('auth/changer-mdp/',     ChangerMotDePasseView.as_view(),     name='changer-mdp'),
-    path('auth/mes-statistiques/', StatistiquesUtilisateurView.as_view(), name='mes-stats'),
-    path('', include(router.urls)),
+    path('auth/register/',          RegisterView.as_view(),              name='register'),
+    path('auth/login/',             TokenObtainPairView.as_view(),       name='login'),
+    path('auth/refresh/',           TokenRefreshView.as_view(),          name='token_refresh'),
+    path('auth/profile/',           ProfileView.as_view(),               name='profile'),
+    path('auth/users/',             CreateUserView.as_view(),            name='users'),
+    path('auth/users/<int:pk>/',    DeleteUserView.as_view(),            name='delete-user'),
+    path('auth/profile/update/',    ProfilDetailView.as_view(),          name='update-profile'),
+    path('auth/change-password/',   ChangerMotDePasseView.as_view(),     name='change-password'),
+    path('auth/mes-statistiques/',  StatistiquesUtilisateurView.as_view(), name='mes-stats'),
+    path('',                        include(router.urls)),
 ]

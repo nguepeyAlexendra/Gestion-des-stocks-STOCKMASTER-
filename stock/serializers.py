@@ -1,7 +1,9 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core import exceptions
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import transaction  # ✅ AJOUTÉ pour les transactions atomiques
 from rest_framework import serializers
 from .models import (
     ProfilUtilisateur, Categorie, Fournisseur, Produit,
@@ -52,21 +54,25 @@ class UserSerializer(serializers.ModelSerializer):
     def get_role(self, obj):
         try:
             return obj.profil.role
-        except:
+        except ProfilUtilisateur.DoesNotExist:  # ✅ MODIFIÉ : plus précis
             return 'utilisateur'
 
     def get_is_admin(self, obj):
         try:
             return obj.profil.is_admin
-        except:
+        except ProfilUtilisateur.DoesNotExist:  # ✅ MODIFIÉ : plus précis
             return False
-        
+
+
+# ✅ MODIFIÉ : Gestion complète de la mise à jour du profil
 class ProfilSerializer(serializers.ModelSerializer):
-    username   = serializers.CharField(source='user.username', read_only=True)
-    email      = serializers.CharField(source='user.email', read_only=True)
+    # ✅ MODIFIÉ : username et email ne sont plus read_only pour permettre la mise à jour
+    username   = serializers.CharField(source='user.username', required=False)
+    email      = serializers.EmailField(source='user.email', required=False)
     role       = serializers.ReadOnlyField()
     is_admin   = serializers.ReadOnlyField()
-    photo_url  = serializers.ReadOnlyField()
+    # ✅ MODIFIÉ : SerializerMethodField au lieu de ReadOnlyField pour gérer l'URL absolue
+    photo_url  = serializers.SerializerMethodField()
 
     class Meta:
         model  = ProfilUtilisateur
@@ -76,6 +82,33 @@ class ProfilSerializer(serializers.ModelSerializer):
             'telephone', 'adresse', 'created_at'
         ]
 
+    def get_photo_url(self, obj):
+        """Construit l'URL absolue de la photo (compatible responsive & production)"""
+        if obj.photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.photo.url)
+            return f'http://127.0.0.1:8000{obj.photo.url}'
+        return None
+
+    def update(self, instance, validated_data):
+        """
+        Gère la mise à jour simultanée du User (username, email)
+        et du ProfilUtilisateur (photo, prénom, téléphone, etc.)
+        """
+        # ✅ MODIFIÉ : Extraire et mettre à jour les données du User
+        user_data = validated_data.pop('user', {})
+        user = instance.user
+        
+        for attr, value in user_data.items():
+            setattr(user, attr, value)
+        user.save()
+
+        # Mise à jour du ProfilUtilisateur
+        return super().update(instance, validated_data)
+
+
+# ✅ MODIFIÉ : Validation de la force du nouveau mot de passe
 class ChangerMotDePasseSerializer(serializers.Serializer):
     ancien_mot_de_passe  = serializers.CharField(required=True)
     nouveau_mot_de_passe = serializers.CharField(required=True, min_length=6)
@@ -84,6 +117,14 @@ class ChangerMotDePasseSerializer(serializers.Serializer):
         user = self.context['request'].user
         if not user.check_password(value):
             raise serializers.ValidationError("Ancien mot de passe incorrect.")
+        return value
+
+    # ✅ AJOUTÉ : Validation de la politique de mot de passe Django
+    def validate_nouveau_mot_de_passe(self, value):
+        try:
+            validate_password(value)
+        except exceptions.ValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
         return value
 
 
@@ -297,6 +338,7 @@ class LigneVenteSerializer(serializers.ModelSerializer):
         return data
 
 
+# ✅ MODIFIÉ : Ajout de transaction.atomic() pour garantir l'intégrité des données
 # ── VENTE ──
 class VenteSerializer(serializers.ModelSerializer):
     lignes     = LigneVenteSerializer(many=True)
@@ -321,35 +363,37 @@ class VenteSerializer(serializers.ModelSerializer):
         validated_data.pop('user', None)
         user = self.context['request'].user
 
-        montant_total = sum(l['quantite'] * l['prix_unitaire'] for l in lignes_data)
-        montant_recu  = validated_data.get('montant_recu', montant_total)
-        monnaie_rendu = montant_recu - montant_total
+        # ✅ AJOUTÉ : Transaction atomique pour garantir la cohérence des données
+        with transaction.atomic():
+            montant_total = sum(l['quantite'] * l['prix_unitaire'] for l in lignes_data)
+            montant_recu  = validated_data.get('montant_recu', montant_total)
+            monnaie_rendu = montant_recu - montant_total
 
-        vente = Vente.objects.create(
-            **validated_data,
-            montant_total = montant_total,
-            monnaie_rendu = monnaie_rendu,
-            user          = user
-        )
-
-        for ligne_data in lignes_data:
-            produit    = ligne_data['produit']
-            sous_total = ligne_data['quantite'] * ligne_data['prix_unitaire']
-            ligne_data.pop('sous_total', None)
-            LigneVente.objects.create(
-                vente      = vente,
-                sous_total = sous_total,
-                **ligne_data
+            vente = Vente.objects.create(
+                **validated_data,
+                montant_total = montant_total,
+                monnaie_rendu = monnaie_rendu,
+                user          = user
             )
-            # Stock partagé — diminue pour tous
-            produit.quantite_stock -= ligne_data['quantite']
-            produit.save()
 
-        Facture.objects.create(
-            vente         = vente,
-            montant_total = montant_total,
-            user          = user
-        )
+            for ligne_data in lignes_data:
+                produit    = ligne_data['produit']
+                sous_total = ligne_data['quantite'] * ligne_data['prix_unitaire']
+                ligne_data.pop('sous_total', None)
+                LigneVente.objects.create(
+                    vente      = vente,
+                    sous_total = sous_total,
+                    **ligne_data
+                )
+                # Stock partagé — diminue pour tous
+                produit.quantite_stock -= ligne_data['quantite']
+                produit.save()
+
+            Facture.objects.create(
+                vente         = vente,
+                montant_total = montant_total,
+                user          = user
+            )
 
         return vente
 
@@ -378,6 +422,7 @@ class FactureSerializer(serializers.ModelSerializer):
         return LigneVenteSerializer(obj.vente.lignes.all(), many=True).data
 
 
+# ✅ MODIFIÉ : Ajout de la méthode create() pour gérer la mise à jour du stock
 # ── ENTREE STOCK ──
 class EntreeStockSerializer(serializers.ModelSerializer):
     produit_nom     = serializers.CharField(source='produit.nom', read_only=True)
@@ -394,3 +439,12 @@ class EntreeStockSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("La quantité doit être supérieure à 0.")
         return value
+
+    # ✅ AJOUTÉ : Gestion de la mise à jour du stock dans le serializer
+    def create(self, validated_data):
+        with transaction.atomic():
+            entree = super().create(validated_data)
+            # Mise à jour du stock du produit
+            entree.produit.quantite_stock += entree.quantite
+            entree.produit.save()
+        return entree
