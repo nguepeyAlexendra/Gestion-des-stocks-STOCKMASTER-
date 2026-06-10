@@ -9,9 +9,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-changez-moi-en-production')
 
-DEBUG = True
+DEBUG = False  # ⚠️ IMPORTANT : False en production (sur Render)
 
 ALLOWED_HOSTS = ['*']
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -32,14 +33,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise pour les fichiers statiques
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.middleware.security.SecurityMiddleware',
 ]
 
 ROOT_URLCONF = 'stockmaster_backend.urls'
@@ -88,6 +88,7 @@ USE_TZ = True
 # Fichiers statiques
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Fichiers médias
 MEDIA_URL = '/media/'
@@ -117,22 +118,7 @@ SIMPLE_JWT = {
 # Configuration CORS
 CORS_ALLOW_ALL_ORIGINS = True
 
-
-# ── EMAIL ──
-EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST          = 'smtp.gmail.com'
-EMAIL_PORT          = 587
-EMAIL_USE_TLS       = True
-EMAIL_HOST_USER     = 'emmanuellenjomo07@gmail.com'
-EMAIL_HOST_PASSWORD = 'hsjnvnywmudsigdc'
-DEFAULT_FROM_EMAIL  = 'StockMaster <emmanuellenjomo07@gmail.com>'
-
-# --- FICHIERS STATIQUES (ADMIN DJANGO) ---
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-
-# Configuration Email via API Brevo (HTTPS - jamais bloqué)
+# ── EMAIL (API Brevo via HTTPS - jamais bloqué par Render) ──
 EMAIL_BACKEND = 'stockmaster_backend.email_backend.BrevoEmailBackend'
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'StockMaster <emmanuellenjomo07@gmail.com>')
