@@ -130,3 +130,9 @@ DEFAULT_FROM_EMAIL  = 'StockMaster <emmanuellenjomo07@gmail.com>'
 # --- FICHIERS STATIQUES (ADMIN DJANGO) ---
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+# Configuration Email via API Brevo (HTTPS - jamais bloqué)
+EMAIL_BACKEND = 'stockmaster_backend.email_backend.BrevoEmailBackend'
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'StockMaster <emmanuellenjomo07@gmail.com>')
