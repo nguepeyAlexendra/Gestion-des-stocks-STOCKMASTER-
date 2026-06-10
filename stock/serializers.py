@@ -129,6 +129,7 @@ class ChangerMotDePasseSerializer(serializers.Serializer):
 
 
 # ── CREATION UTILISATEUR PAR ADMIN ──
+# ── CREATION UTILISATEUR PAR ADMIN ──
 class CreateUserSerializer(serializers.Serializer):
     username = serializers.CharField()
     email    = serializers.EmailField()
@@ -154,6 +155,9 @@ class CreateUserSerializer(serializers.Serializer):
         ProfilUtilisateur.objects.create(user=user, role=validated_data['role'])
 
         role_label = 'Administrateur' if validated_data['role'] == 'admin' else 'Utilisateur'
+
+        # ✅ MODIFIÉ : Utilisation de l'URL de production Vercel
+        frontend_url = 'https://stockmaster-angular-app-xpmg.vercel.app'
 
         html_content = f"""
 <!DOCTYPE html>
@@ -200,7 +204,7 @@ class CreateUserSerializer(serializers.Serializer):
       <table style="width:100%;">
         <tr>
           <td style="text-align:center;">
-            <a href="http://localhost:4200/auth/login"
+            <a href="{frontend_url}/auth/login"
                style="display:inline-block;background:#1D9E75;color:white;text-decoration:none;padding:12px 40px;border-radius:8px;font-size:15px;font-weight:500;">
               Se connecter a StockMaster
             </a>
@@ -218,10 +222,18 @@ class CreateUserSerializer(serializers.Serializer):
 </html>
         """
 
-        text_content = f"Bonjour {user.username}, votre compte StockMaster a ete cree. Identifiants : username={user.username}, password={mot_de_passe}. Connectez-vous sur http://localhost:4200/auth/login"
+        text_content = f"Bonjour {user.username}, votre compte StockMaster a ete cree. Identifiants : username={user.username}, password={mot_de_passe}. Connectez-vous sur {frontend_url}/auth/login"
 
+        # ✅ MODIFIÉ : fail_silently=False pour voir les erreurs + logging
         try:
             from django.core.mail import EmailMultiAlternatives
+            import logging
+            logger = logging.getLogger(__name__)
+            
+            logger.info(f"Tentative d'envoi d'email à {user.email}")
+            logger.info(f"From: {settings.DEFAULT_FROM_EMAIL}")
+            logger.info(f"Backend: {settings.EMAIL_BACKEND}")
+            
             msg = EmailMultiAlternatives(
                 subject    = 'Vos identifiants StockMaster',
                 body       = text_content,
@@ -229,12 +241,20 @@ class CreateUserSerializer(serializers.Serializer):
                 to         = [user.email]
             )
             msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=True)
+            
+            # ✅ MODIFIÉ : fail_silently=False pour voir les erreurs
+            result = msg.send(fail_silently=False)
+            logger.info(f"Email envoyé avec succès à {user.email} (result: {result})")
+            
         except Exception as e:
-            print(f"Erreur envoi email: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur envoi email à {user.email}: {str(e)}", exc_info=True)
+            print(f"❌ ERREUR ENVOI EMAIL: {e}")
+            # On ne lève pas l'exception pour ne pas bloquer la création de l'utilisateur
+            # mais on log l'erreur
 
         return user
-
 # ── CATEGORIE ──
 class CategorieSerializer(serializers.ModelSerializer):
     nombre_produits = serializers.SerializerMethodField()
