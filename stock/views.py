@@ -21,11 +21,15 @@ from .serializers import (
 # ── PERMISSIONS PERSONNALISEES ──
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
+        # Les superusers Django sont automatiquement admins
+        if request.user.is_superuser:
+            return True
+        
         try:
             return request.user.profil.is_admin
         except (ProfilUtilisateur.DoesNotExist, AttributeError):
             return False
-
+        
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
