@@ -118,7 +118,7 @@ SIMPLE_JWT = {
 # Configuration CORS
 CORS_ALLOW_ALL_ORIGINS = True
 
-# ── EMAIL (API Brevo via HTTPS - jamais bloqué par Render) ──
+# ── EMAIL (API Brevo via HTTPS) ──
 EMAIL_BACKEND = 'stockmaster_backend.email_backend.BrevoEmailBackend'
-BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'StockMaster <emmanuellenjomo07@gmail.com>')
+BREVO_API_KEY = config('BREVO_API_KEY', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='StockMaster <emmanuellenjomo07@gmail.com>')
