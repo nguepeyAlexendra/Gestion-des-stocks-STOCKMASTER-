@@ -8,10 +8,14 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-changez-moi-en-production')
+# DEBUG = True en local, False sur Render
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ['true', '1', 'yes']
 
-DEBUG = False  # ⚠️ IMPORTANT : False en production (sur Render)
-
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    os.environ.get('RENDER_EXTERNAL_HOSTNAME', '')
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -63,11 +67,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'stockmaster_backend.wsgi.application'
 
 # Base de données
+import dj_database_url
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=True
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600
     )
 }
 
@@ -116,7 +121,11 @@ SIMPLE_JWT = {
 }
 
 # Configuration CORS
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    'CORS_ALLOWED_ORIGINS', 
+    'http://localhost:4200'
+).split(',')
+CORS_ALLOW_CREDENTIALS = True
 
 # ── EMAIL (API Brevo via HTTPS) ──
 EMAIL_BACKEND = 'stockmaster_backend.email_backend.BrevoEmailBackend'
